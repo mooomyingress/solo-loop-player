@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6TWuJNXjxMoxuE1dxgknEmb9q3xC6xoN/spFY/WFKts='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VKjFFlGuKalO1mMCDaJMj92517+89ZgfNed6nqbEDxQ='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -1092,9 +1092,9 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
     <div class="sl-row">
       <span class="sl-t" id="shapeLbl" title="What one pass of the selected phrase plays: its length and where it starts">Sub-loop</span>
       <span class="seg shapeseg" id="shapeSeg" role="radiogroup" aria-labelledby="shapeLbl" title="Sub-loop shape (T cycles)">
-        <button type="button" role="radio" aria-checked="false" data-shape="phrase" title="Phrase as played: the loop is exactly the selected phrase or run of phrases, edge to edge">Phrase as played</button>
-        <button type="button" role="radio" aria-checked="false" data-shape="fitBeat" title="On the beat: the loop is stretched outward to the nearest beats">On the beat</button>
-        <button type="button" role="radio" aria-checked="false" data-shape="fitBar" title="Whole bars: the loop is stretched outward to bar lines, so it keeps the time signature">Whole bars<span class="tag"> · in time</span></button>
+        <button type="button" role="radio" aria-checked="false" data-shape="phrase" title="Phrase as played: the loop is exactly the selected phrase or run of phrases, edge to edge. Clears Lead-in / Lead-out">Phrase as played</button>
+        <button type="button" role="radio" aria-checked="false" data-shape="fitBeat" title="On the beat: whole beats. An edge within a hair of a beat snaps to it, otherwise it stretches outward. Clears Lead-in / Lead-out">On the beat</button>
+        <button type="button" role="radio" aria-checked="false" data-shape="fitBar" title="Whole bars: an edge within a hair of a bar line snaps to it, otherwise it stretches outward, so it keeps the time signature. Clears Lead-in / Lead-out">Whole bars<span class="tag"> · in time</span></button>
         <button type="button" role="radio" aria-checked="false" data-shape="window" id="shapeWinBtn" hidden title="Window: a fixed number of beats on the grid"><span class="wl">Window · </span><span class="wv"></span></button>
       </span>
       <span class="chip num" id="shapeChip" hidden title="Length of one pass"></span>
@@ -2548,13 +2548,16 @@ if (typeof module !== 'undefined') module.exports = { stretch, makeFFT };
     return r === 0 ? s : s + r / bpb * (lineAt(grid, i + 1) - s);
   }
 
-  const FIT_TOL = 0.03; // seconds: an edge this close to a grid line counts as on it
+  const FIT_TOL = 0.03; // seconds: an edge this close to a grid line counts as on it (clamping, windows)
+  const FIT_SNAP_BEATS = 0.12; // beats: a fit edge this close to a beat / bar line snaps to THAT line (even inward)
 
   // The span a sub-loop plays: the phrase [a, b] plus lead-in / lead-out, optionally fitted to the metre.
   //   opts: { fit: 'off'|'bar'|'beat', leadIn, leadOut (beats), loop: {a, b} (clamp), tol (s, default 0.03) }
-  //   fit 'bar' / 'beat': start = the grid line (bar line / beat) at or before a, end = the line at or after b
-  //     (always floor / ceil, never round: a pickup that starts up to a beat or so before a bar line takes
-  //     the whole previous bar, so it is heard in time). An edge within `tol` of a line counts as on it.
+  //   fit 'bar' / 'beat': an edge within FIT_SNAP_BEATS (0.12 beat, opts.snap) of a grid line (bar line / beat)
+  //     snaps to THAT line, even if that trims a few ms of the phrase; otherwise start goes to the line before
+  //     a and end to the line after b (floor / ceil: a pickup that starts a beat or so before a bar line takes
+  //     the whole previous bar, so it is heard in time). If both edges snap to the same line the end moves out
+  //     by one unit (a beat / bar), so a fit is never empty.
   //     Lead-in / lead-out then add whole beats before / after (with fit 'bar' they are rounded UP to whole
   //     bars, so the pass stays a whole number of bars).
   //   fit 'off': start = a − leadIn beats, end = b + leadOut beats (beat length at a / at b), as before.
@@ -2567,6 +2570,7 @@ if (typeof module !== 'undefined') module.exports = { stretch, makeFFT };
     const o = opts || {};
     const bpb = grid.beatsPerBar;
     const tol = o.tol != null ? o.tol : FIT_TOL;
+    const snap = o.snap != null ? o.snap : FIT_SNAP_BEATS;
     const fit = o.fit === 'bar' || o.fit === 'beat' ? o.fit : 'off';
     const lo = o.loop ? o.loop.a : -Infinity, hi = o.loop ? o.loop.b : Infinity;
     const out = (start, end, whole, clamped) => {
@@ -2584,8 +2588,13 @@ if (typeof module !== 'undefined') module.exports = { stretch, makeFFT };
     const U = fit === 'bar' ? bpb : 1;
     let li = Math.max(0, Math.round(o.leadIn || 0)), lout = Math.max(0, Math.round(o.leadOut || 0));
     if (fit === 'bar') { li = Math.ceil(li / bpb) * bpb; lout = Math.ceil(lout / bpb) * bpb; }
-    let gS = Math.floor(beatPos(grid, a + tol) / U + 1e-9) * U;
-    let gE = Math.ceil(beatPos(grid, b - tol) / U - 1e-9) * U;
+    const edge = (pos, dir) => {
+      const near = Math.round(pos / U) * U;
+      if (Math.abs(pos - near) <= snap + 1e-9) return near;
+      return dir < 0 ? Math.floor(pos / U + 1e-9) * U : Math.ceil(pos / U - 1e-9) * U;
+    };
+    let gS = edge(beatPos(grid, a), -1);
+    let gE = edge(beatPos(grid, b), 1);
     if (gE <= gS) gE = gS + U;
     gS -= li; gE += lout;
     let clamped = false, whole = true;
@@ -2681,7 +2690,7 @@ if (typeof module !== 'undefined') module.exports = { stretch, makeFFT };
     };
     let A = edge(a, -1), B = edge(b, 1);
     if (!(B.t > A.t + 1e-6)) {
-      const r = fitRange(grid, a, b, { fit: 'bar', tol: 0 });
+      const r = fitRange(grid, a, b, { fit: 'bar', tol: 0, snap: 0 });
       A = { t: r.start, how: 'floor' }; B = { t: r.end, how: 'ceil' };
     }
     const bars = Math.round((beatPos(grid, B.t) - beatPos(grid, A.t)) / grid.beatsPerBar);
@@ -2809,7 +2818,7 @@ if (typeof module !== 'undefined') module.exports = { stretch, makeFFT };
     onsetEnvelope,
     gridHelpers: {
       barAt, beatAt, beatLength, nearestBeat, nearestBar, nearestIndex, lineAt, barLabel, barsInRange,
-      beatPos, timeOfBeat, fitRange, fitLoopToBars, clickPattern, clickBeats, FIT_TOL,
+      beatPos, timeOfBeat, fitRange, fitLoopToBars, clickPattern, clickBeats, FIT_TOL, FIT_SNAP_BEATS,
       lengthBeats, windowRange, padRegion,
       shift, setDownbeat, moveBar, setTempo, fromBeats, uniform,
       parseChords, formatChords, chordPresets, chordParts, chordAt,
@@ -3969,13 +3978,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return r === 0 ? s : s + r / bpb * (lineAt(grid, i + 1) - s);
   }
 
-  const FIT_TOL = 0.03; // seconds: an edge this close to a grid line counts as on it
+  const FIT_TOL = 0.03; // seconds: an edge this close to a grid line counts as on it (clamping, windows)
+  const FIT_SNAP_BEATS = 0.12; // beats: a fit edge this close to a beat / bar line snaps to THAT line (even inward)
 
   // The span a sub-loop plays: the phrase [a, b] plus lead-in / lead-out, optionally fitted to the metre.
   //   opts: { fit: 'off'|'bar'|'beat', leadIn, leadOut (beats), loop: {a, b} (clamp), tol (s, default 0.03) }
-  //   fit 'bar' / 'beat': start = the grid line (bar line / beat) at or before a, end = the line at or after b
-  //     (always floor / ceil, never round: a pickup that starts up to a beat or so before a bar line takes
-  //     the whole previous bar, so it is heard in time). An edge within `tol` of a line counts as on it.
+  //   fit 'bar' / 'beat': an edge within FIT_SNAP_BEATS (0.12 beat, opts.snap) of a grid line (bar line / beat)
+  //     snaps to THAT line, even if that trims a few ms of the phrase; otherwise start goes to the line before
+  //     a and end to the line after b (floor / ceil: a pickup that starts a beat or so before a bar line takes
+  //     the whole previous bar, so it is heard in time). If both edges snap to the same line the end moves out
+  //     by one unit (a beat / bar), so a fit is never empty.
   //     Lead-in / lead-out then add whole beats before / after (with fit 'bar' they are rounded UP to whole
   //     bars, so the pass stays a whole number of bars).
   //   fit 'off': start = a − leadIn beats, end = b + leadOut beats (beat length at a / at b), as before.
@@ -3988,6 +4000,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const o = opts || {};
     const bpb = grid.beatsPerBar;
     const tol = o.tol != null ? o.tol : FIT_TOL;
+    const snap = o.snap != null ? o.snap : FIT_SNAP_BEATS;
     const fit = o.fit === 'bar' || o.fit === 'beat' ? o.fit : 'off';
     const lo = o.loop ? o.loop.a : -Infinity, hi = o.loop ? o.loop.b : Infinity;
     const out = (start, end, whole, clamped) => {
@@ -4005,8 +4018,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const U = fit === 'bar' ? bpb : 1;
     let li = Math.max(0, Math.round(o.leadIn || 0)), lout = Math.max(0, Math.round(o.leadOut || 0));
     if (fit === 'bar') { li = Math.ceil(li / bpb) * bpb; lout = Math.ceil(lout / bpb) * bpb; }
-    let gS = Math.floor(beatPos(grid, a + tol) / U + 1e-9) * U;
-    let gE = Math.ceil(beatPos(grid, b - tol) / U - 1e-9) * U;
+    const edge = (pos, dir) => {
+      const near = Math.round(pos / U) * U;
+      if (Math.abs(pos - near) <= snap + 1e-9) return near;
+      return dir < 0 ? Math.floor(pos / U + 1e-9) * U : Math.ceil(pos / U - 1e-9) * U;
+    };
+    let gS = edge(beatPos(grid, a), -1);
+    let gE = edge(beatPos(grid, b), 1);
     if (gE <= gS) gE = gS + U;
     gS -= li; gE += lout;
     let clamped = false, whole = true;
@@ -4102,7 +4120,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     };
     let A = edge(a, -1), B = edge(b, 1);
     if (!(B.t > A.t + 1e-6)) {
-      const r = fitRange(grid, a, b, { fit: 'bar', tol: 0 });
+      const r = fitRange(grid, a, b, { fit: 'bar', tol: 0, snap: 0 });
       A = { t: r.start, how: 'floor' }; B = { t: r.end, how: 'ceil' };
     }
     const bars = Math.round((beatPos(grid, B.t) - beatPos(grid, A.t)) / grid.beatsPerBar);
@@ -4230,7 +4248,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     onsetEnvelope,
     gridHelpers: {
       barAt, beatAt, beatLength, nearestBeat, nearestBar, nearestIndex, lineAt, barLabel, barsInRange,
-      beatPos, timeOfBeat, fitRange, fitLoopToBars, clickPattern, clickBeats, FIT_TOL,
+      beatPos, timeOfBeat, fitRange, fitLoopToBars, clickPattern, clickBeats, FIT_TOL, FIT_SNAP_BEATS,
       lengthBeats, windowRange, padRegion,
       shift, setDownbeat, moveBar, setTempo, fromBeats, uniform,
       parseChords, formatChords, chordPresets, chordParts, chordAt,
@@ -9147,9 +9165,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // while a fixed length is set. `info` comes from main.js: { chip, desc, win (e.g. "2 beats"), prev (name of the radio Reset returns to) }.
   // No grid: only Phrase as played works (the others say "Needs a bar grid (Grid tab)").
   const SHAPE_TITLES = {
-    phrase: 'Phrase as played: the loop is exactly the selected phrase or run of phrases, edge to edge',
-    fitBeat: 'On the beat: the loop is stretched outward to the nearest beats, so it is a whole number of beats',
-    fitBar: 'Whole bars: the loop is stretched outward to bar lines, so it keeps the time signature (a whole number of bars)' };
+    phrase: 'Phrase as played: the loop is exactly the selected phrase or run of phrases, edge to edge (clears Lead-in / Lead-out)',
+    fitBeat: 'On the beat: a whole number of beats; an edge within a hair of a beat snaps to it, otherwise it stretches outward (clears Lead-in / Lead-out)',
+    fitBar: 'Whole bars: a whole number of bars; an edge within a hair of a bar line snaps to it, otherwise it stretches outward (clears Lead-in / Lead-out)' };
   function shape(song, info) {
     const p = song.practice, g = song.grid, fixed = g ? GH.lengthBeats(g.beatsPerBar, p.length) : null;
     const seg = $('#shapeSeg'), cur = fixed ? 'window' : g ? p.length : 'phrase';
@@ -10005,6 +10023,34 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (round(pi.bars) && (pi.fit !== 'off' ? pi.whole : true)) { const n = Math.round(pi.bars); return n + (n === 1 ? ' bar' : ' bars'); }
     return '≈' + pi.bars.toFixed(1) + ' bars';
   }
+  // "7 beats (4 + 3 lead-in)" / "6 beats (1 lead-in + 4 + 1 lead-out)": lengthText plus the parts when a Lead-in / Lead-out
+  // is actually playing (Phrase as played: seconds). The core is the same fit without leads (one fitRange, via playInfo).
+  const fmtN = (x) => (Math.abs(x - Math.round(x)) < 0.05 ? String(Math.round(x)) : x.toFixed(1));
+  function leadParts(pi) {
+    const s = song(), g = s.grid, p = s.practice, r = rangeNow();
+    if (!pi || !r || pi.fit === 'fixed' || pi.run) return null;
+    let li, lo, core, unit = '';
+    if (pi.fit === 'off' || !g) { li = pi.lead; lo = pi.tail; core = r.b - r.a; fmtN.secs = true; }
+    else {
+      const reg = regionNow(), U = pi.fit === 'bar' ? g.beatsPerBar : 1;
+      const c = GH.fitRange(g, r.a, r.b, { fit: pi.fit, leadIn: 0, leadOut: 0, loop: { a: reg.a, b: reg.b } });
+      li = (GH.beatPos(g, c.start) - GH.beatPos(g, pi.start)) / U; lo = (GH.beatPos(g, pi.end) - GH.beatPos(g, c.end)) / U;
+      core = c.beats / U; fmtN.secs = false;
+    }
+    const f = (x) => (fmtN.secs ? x.toFixed(1) : fmtN(x));
+    const hasIn = li > (fmtN.secs ? 0.05 : 0.01), hasOut = lo > (fmtN.secs ? 0.05 : 0.01);
+    if (!hasIn && !hasOut) return null;
+    const bits = [];
+    if (hasIn && hasOut) bits.push(f(li) + ' lead-in', f(core), f(lo) + ' lead-out');
+    else if (hasIn) bits.push(f(core), f(li) + ' lead-in');
+    else bits.push(f(core), f(lo) + ' lead-out');
+    return '(' + bits.join(' + ') + ')';
+  }
+  function lengthDetail(pi, base) {
+    const parts = fixedBeats() ? null : leadParts(pi);
+    base = base || lengthText(pi);
+    return parts ? base + ' ' + parts : base;
+  }
   const clickOn = () => song().practice.click !== 'off' && !!song().grid;
   const backbeatLabel = () => (song().grid && song().grid.beatsPerBar !== 4 ? 'backbeat' : '2 and 4');
   // Snap (per-viewer pref): Off · Beats · Bars. Stored as the old boolean `snap` (on / off, what N toggles) plus
@@ -10241,7 +10287,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const parts = [];
     if (ix) {
       parts.push((ix[0] === ix[1] ? 'Phrase ' + (ix[0] + 1) : 'Phrases ' + (ix[0] + 1) + '–' + (ix[1] + 1)) + ' of ' + L.phrases.length);
-      const pi = playInfo(), len = lengthText(pi);
+      const pi = playInfo(), len = lengthDetail(pi);
       if (len) parts.push(len + (pi && pi.run ? ' (whole run)' : ''));
     } else parts.push('Whole loop');
     const st = app.st;
@@ -10595,7 +10641,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         tap: app.tap ? { taps: app.tap.taps.length, clean: GH.cleanTaps(app.tap.taps), playing: !!app.st.playing } : null,
         take: takeValid() ? app.take.applied : null, barSel: s.grid ? barSelIndex() : null,
         win: fp ? { text: windowText(fp), fixed: !!fixedBeats(), shift: fp.shift || 0, length: (SHAPE_NAMES[s.practice.length] || lenName(s.practice.length)).toLowerCase() } : null,
-        peaks: E.peaks, play: pi, lenText: pi ? lengthText(pi) : '', selected, playhead: E.hasAudio ? E.time : null });
+        peaks: E.peaks, play: pi, lenText: pi ? lengthDetail(pi) : '', selected, playhead: E.hasAudio ? E.time : null });
     }
     if (has('transport')) P.transport({ song: s, st: app.st, hasAudio: E.hasAudio, engineText: engineText(), smooth: app.st.smooth === 'ready' && app.st.mode === 'buffer' });
     if (has('practice')) P.practice(s);
@@ -10950,21 +10996,28 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const cur = n ? 'window' : g ? p.length : 'phrase';
     const secs = (x) => x.toFixed(1) + ' s';
     const chip = !pi ? '' : cur === 'phrase' || cur === 'window' ? secs(pi.end - pi.start) : lengthText(pi);
+    const chipFull = !pi || cur === 'window' ? chip : cur === 'phrase' ? lengthDetail(pi, chip) : lengthDetail(pi);
     const desc = cur === 'window' ? 'A fixed window of ' + lenName(n) + (isBarLen(p.length) ? ' (' + lenName(p.length) + ')' : '') + ' on the grid, starting ' + START_NAMES[p.windowStart] + '. Slide it with , and . (Shift: half a beat), resize with = and −.'
-      : cur === 'fitBeat' ? 'Stretched outward to the nearest beats, so the loop is a whole number of beats.'
-        : cur === 'fitBar' ? 'Stretched outward to bar lines, so the loop keeps the time signature: always a whole number of bars.'
+      : cur === 'fitBeat' ? 'A whole number of beats: an edge within a hair of a beat snaps to it, otherwise it stretches outward to the next beat.'
+        : cur === 'fitBar' ? 'A whole number of bars: an edge within a hair of a bar line snaps to it, otherwise it stretches outward, so the loop keeps the time signature.'
           : 'Loops exactly the selected phrase or run of phrases, edge to edge.' + (g ? '' : ' On the beat and Whole bars: Needs a bar grid (Grid tab).');
-    return { chip, desc, win: n ? lenName(p.length) : '', prev: SHAPE_NAMES[lastShape.get(s.id)] || 'Whole bars' };
+    return { chip: chipFull, desc, win: n ? lenName(p.length) : '', prev: SHAPE_NAMES[lastShape.get(s.id)] || 'Whole bars' };
   }
   const START_NAMES = { beat: 'on the beat', phrase: 'at the phrase', half: 'on the half beat' };
   // Fit bars keeps passes whole bars: lead-in / lead-out choices that are not whole bars round up (one undo step).
-  function setLength(v) {
+  // opts.clearLead (the three Sub-loop radios and T): Lead-in / Lead-out go to None in the same undo step, so the
+  // preset is exactly what its label says (they can be added again in Options).
+  function setLength(v, opts) {
     if (v !== 'phrase' && !needGrid()) { queue('practice'); return; }
     noteShape();
-    let extra = '';
+    let extra = '', cleared = '';
     const wasFixed = !!fixedBeats();
     S.transact('length: ' + lenName(v), () => {
       S.setPractice({ length: v });
+      if (opts && opts.clearLead) {
+        const q = song().practice, ci = q.leadIn > 0, co = q.leadOut > 0;
+        if (ci || co) { S.setPractice({ leadIn: 0, leadOut: 0 }); cleared = ' ' + (ci && co ? 'Lead-in and lead-out' : ci ? 'Lead-in' : 'Lead-out') + ' cleared.'; }
+      }
       const g = song().grid, p = song().practice;
       if (v === 'fitBar' && g) {
         const up = (x) => (x ? Math.ceil(x / g.beatsPerBar) * g.beatsPerBar : 0);
@@ -10979,6 +11032,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     // Z / Loop go back and stay respected while stepping between fixed lengths.
     let zoomed = '';
     if (n && !wasFixed && rangeNow() && !isRun() && !W.free && U.prefs.get('zoomScope') !== 'phrase') { setScope('phrase'); zoomed = ' Zoomed to the window (Z: whole loop).'; }
+    if (cleared && !n) { U.status('Sub-loop: ' + SHAPE_NAMES[v] + '.' + cleared + extra + zoomed); return; }
     U.status(n ? 'Window: ' + lenName(n) + ' on the grid, starting ' + START_NAMES[song().practice.windowStart] + ' (, . slide it).' + extra + zoomed
       : 'Sub-loop: ' + SHAPE_NAMES[v] + (v === 'phrase' ? ': the phrase, edge to edge.' : ': each pass is a whole number of ' + (v === 'fitBar' ? 'bars' : 'beats') + '.') + extra + zoomed);
   }
@@ -11275,7 +11329,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   segKeys(clickSeg, (b) => setClickMode(b.dataset.click));
   // Sub-loop radios: one click = one shape (Window is a state, not a choice: clicking it changes nothing)
   const shapeSeg = $('#shapeSeg');
-  const chooseShape = (v) => { if (v === 'window' || song().practice.length === v) return; setLength(v); };
+  const chooseShape = (v) => { if (v === 'window') return; setLength(v, { clearLead: true }); };
   shapeSeg.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-shape]');
     if (!b || b.disabled) return;
@@ -11636,7 +11690,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function cycleLength() {
     if (!needGrid()) return;
     const order = ['phrase', 'fitBar', 'fitBeat'];
-    setLength(order[(order.indexOf(song().practice.length) + 1) % order.length]);
+    setLength(order[(order.indexOf(song().practice.length) + 1) % order.length], { clearLead: true });
   }
   function cycleClick() {
     if (!needGrid()) return;
