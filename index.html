@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Kaq3GUX71VSUfqGJ1sOj4JwGolR/tx1PnEyonnc1ieg='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-6TWuJNXjxMoxuE1dxgknEmb9q3xC6xoN/spFY/WFKts='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -137,8 +137,8 @@ body.dragover .app { outline: 2px dashed var(--accent); outline-offset: -4px; }
   height: 100vh;
   min-width: 1080px;
   display: grid;
-  /* top bar · lanes (take the free height) · transport · practice · columns (their content, capped) · status */
-  grid-template-rows: auto minmax(254px, 1fr) auto auto minmax(0, 372px) auto;
+  /* top bar · lanes (take the free height) · transport · sub-loop · practice · columns (their content, capped) · status */
+  grid-template-rows: auto minmax(254px, 1fr) auto auto auto minmax(0, 372px) auto;
   gap: 8px;
   padding: 8px;
 }
@@ -322,7 +322,34 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
 .bar.practice select:disabled { opacity: 0.5; }
 /* the click options (shown only while Click is on) sit inside their groups without a box of their own */
 .bar.practice .click-opts { display: contents; }
-/* Visual refresh: four titled groups (Turn, Shape, Click, Flow). The controls still wrap one by one (two lines with
+/* Sub-loop card (shape of one pass): a card of its own between the transport and the options row. Radiogroup like Gap;
+   the Window segment exists only while a fixed length is set. Start / Lead-in / Lead-out open inline under "Options". */
+.bar.subloop { flex-direction: column; align-items: stretch; gap: 0; padding: 4px 10px 3px; font-size: 12px; }
+.sl-row { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; row-gap: 4px; }
+.sl-t { font-size: 9.5px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); user-select: none; white-space: nowrap; }
+.shapeseg > button { padding: 0 9px; }
+.shapeseg .tag { color: var(--faint); font-size: 11px; white-space: pre; }
+.shapeseg > button[aria-checked="true"] .tag { color: var(--muted); }
+.shapeseg > button[data-shape="window"][aria-checked="true"] { background: color-mix(in srgb, var(--star) 18%, transparent); border-color: color-mix(in srgb, var(--star) 70%, transparent); }
+.shapeseg > button[hidden], .sl-win[hidden], .chip[hidden], .sl-hint[hidden] { display: none; }
+.sl-win { display: inline-flex; align-items: center; gap: 4px; }
+.sl-win button { height: 24px; padding: 0 8px; }
+.sl-win .nav { padding: 0 9px; font-size: 14px; line-height: 1; }
+.sl-hint { color: var(--faint); font-size: 11.5px; white-space: nowrap; }
+.sl-desc { color: var(--muted); font-size: 11.5px; line-height: 16px; min-height: 16px; padding-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#optBtn { position: relative; gap: 5px; }
+#optBtn .car { width: 8px; height: 8px; fill: currentColor; opacity: 0.6; transition: transform 0.12s; }
+#optBtn[aria-expanded="true"] .car { transform: rotate(180deg); }
+#optBtn .odot { position: absolute; top: 2px; right: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--star); }
+.sl-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 5px 0 3px; margin-top: 3px; border-top: 1px solid var(--line); }
+.sl-opts[hidden] { display: none; }
+.sl-opts .grp { gap: 4px; }
+.sl-opts select { -webkit-appearance: none; appearance: none; padding: 0 16px 0 6px; field-sizing: content; min-width: 44px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 10px) 52%, calc(100% - 6px) 52%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+.sl-opts select:disabled { opacity: 0.5; }
+.sl-note { color: var(--faint); font-size: 11.5px; }
+/* Visual refresh: three titled groups (Turn, Click, Flow; Shape became the Sub-loop card). The controls still wrap one by one (two lines with
    everything on); each small-caps title is glued to its group's first control (.og-h) and carries a hairline divider,
    dropped where a group starts a line (.newline, set by SLP.panels from the layout). */
 .og { display: contents; }
@@ -525,6 +552,17 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .steplegend { display: none; }
   .insp { gap: 6px; padding-top: 6px; padding-bottom: 6px; }
   #chordText { height: 52px; }
+  /* short windows: the Sub-loop card is one line (the description sits after the controls, cut with an ellipsis; full text in its title) */
+  html:not(.is-phone) .app { gap: 6px; }
+  html:not(.is-phone) .bar.subloop { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 3px 10px; min-height: 0; }
+  html:not(.is-phone) .sl-row { display: contents; }
+  html:not(.is-phone) .sl-row > .spacer, html:not(.is-phone) .sl-hint { display: none; }
+  html:not(.is-phone) .sl-desc { order: 5; flex: 1 1 0; min-width: 40px; padding: 0; }
+  html:not(.is-phone) #optBtn { order: 6; }
+  html:not(.is-phone) .sl-opts { order: 7; flex: 1 0 100%; margin-top: 0; }
+  html:not(.is-phone) .pic-box.ph { height: 60px; }
+  html:not(.is-phone) .pic-box.lp { height: 52px; }
+  html:not(.is-phone) .insp { gap: 5px; padding-top: 4px; padding-bottom: 4px; }
 }
 
 /* status */
@@ -808,6 +846,23 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .app .bar.practice .click-opts { display: contents; }
   .app .bar.practice #clickVol { flex: 1 1 auto; width: auto; }
   .app .bar.practice #clickOpts > .grp > label.lbl { width: 92px; }
+  /* Sub-loop card: first block of the Practice tab (ui-phone.js moves it in), full-width radios */
+  .app .bar.practice > .subloop { display: flex; flex-direction: column; align-items: stretch; margin: 0; padding: 12px 0 14px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; min-height: 0; }
+  .app .subloop .sl-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .app .subloop .sl-t { font-size: 12px; letter-spacing: 0.06em; }
+  .app .subloop .shapeseg { display: flex; width: 100%; }
+  .app .bar.practice .shapeseg > button { white-space: normal; line-height: 1.15; text-align: center; padding: 0 3px; font-size: 14px; flex-direction: column; gap: 0; justify-content: center; }
+  .app .subloop .shapeseg .tag { display: block; font-size: 11.5px; }
+  .app .subloop .shapeseg .wl, .app .subloop .shapeseg .wv { display: block; }
+  .app .subloop .sl-row > .spacer, .app .subloop .sl-hint { display: none; }
+  .app .subloop .sl-win { display: flex; gap: 8px; }
+  .app .bar.practice .sl-win button { justify-content: center; }
+  .app .subloop .sl-win .nav { width: 52px; padding: 0; font-size: 20px; }
+  .app .subloop .chip { align-self: flex-start; }
+  .app .bar.practice #optBtn { justify-content: center; }
+  .app .subloop .sl-desc { white-space: normal; font-size: 13px; line-height: 1.35; padding: 8px 0 0; }
+  .app .subloop .sl-opts { flex-direction: column; align-items: stretch; gap: 0; border-top: 1px solid var(--line); margin-top: 8px; padding: 6px 0 0; }
+  .app .subloop .sl-note { font-size: 12.5px; padding: 4px 0 2px; }
   .app .bar.practice .sr { position: static; width: auto; height: auto; clip: auto; overflow: visible; margin-left: 4px; }
   .app .bar.practice .ladder-nums { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
   .app .bar.practice .ladder-nums[hidden] { display: none; }
@@ -1033,6 +1088,36 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
     <span class="phone-trade phone-only" id="phoneTrade"></span>
   </section>
 
+  <section class="bar subloop" id="subloop" aria-label="Sub-loop">
+    <div class="sl-row">
+      <span class="sl-t" id="shapeLbl" title="What one pass of the selected phrase plays: its length and where it starts">Sub-loop</span>
+      <span class="seg shapeseg" id="shapeSeg" role="radiogroup" aria-labelledby="shapeLbl" title="Sub-loop shape (T cycles)">
+        <button type="button" role="radio" aria-checked="false" data-shape="phrase" title="Phrase as played: the loop is exactly the selected phrase or run of phrases, edge to edge">Phrase as played</button>
+        <button type="button" role="radio" aria-checked="false" data-shape="fitBeat" title="On the beat: the loop is stretched outward to the nearest beats">On the beat</button>
+        <button type="button" role="radio" aria-checked="false" data-shape="fitBar" title="Whole bars: the loop is stretched outward to bar lines, so it keeps the time signature">Whole bars<span class="tag"> · in time</span></button>
+        <button type="button" role="radio" aria-checked="false" data-shape="window" id="shapeWinBtn" hidden title="Window: a fixed number of beats on the grid"><span class="wl">Window · </span><span class="wv"></span></button>
+      </span>
+      <span class="chip num" id="shapeChip" hidden title="Length of one pass"></span>
+      <span class="sl-win" id="shapeWin" hidden>
+        <span class="lbl">Slide</span><button type="button" id="winPrev" class="nav" title="Slide the window one beat earlier (,). Shift-click: half a beat" aria-label="Slide the window one beat earlier">‹</button><button type="button" id="winNext" class="nav" title="Slide the window one beat later (.). Shift-click: half a beat" aria-label="Slide the window one beat later">›</button>
+        <button type="button" id="winReset" title="Back to the shape you had before the window">Reset</button>
+      </span>
+      <span class="spacer"></span>
+      <span class="sl-hint" id="shapeHint" title="Keys: = longer window, − shorter, , earlier, . later (Shift: half a beat)">= − resize · , . slide</span>
+      <button type="button" id="optBtn" aria-expanded="false" aria-controls="shapeOpts" title="Options: Lead-in, Lead-out, window Start">Options<svg class="car" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5h7L5 7.5z"/></svg><span class="odot" id="optDot" hidden></span></button>
+    </div>
+    <div class="sl-desc" id="shapeDesc"></div>
+    <div class="sl-opts" id="shapeOpts" hidden>
+      <span class="grp"><label class="lbl" for="startSel">Start</label>
+        <select id="startSel" title="Where a fixed-length window starts (, . slide it)">
+          <option value="beat">On the beat</option><option value="phrase">At the phrase</option><option value="half">Half beat</option>
+        </select></span>
+      <span class="grp"><label class="lbl" for="leadSel">Lead-in</label><select id="leadSel" title="Start a little before the phrase on every pass"></select></span>
+      <span class="grp"><label class="lbl" for="leadOutSel">Lead-out</label><select id="leadOutSel" title="Play a little past the phrase end on every pass"></select></span>
+      <span class="sl-note" id="optNote"></span>
+    </div>
+  </section>
+
   <section class="bar practice" aria-label="Practice">
     <span class="og" role="group" aria-label="Turn"><span class="og-h"><span class="og-t" aria-hidden="true" title="Your turn: what happens after each pass">Turn</span>
     <span class="split" id="tradeWrap">
@@ -1058,20 +1143,6 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
         <option value="0">Off</option><option value="1">1 beat</option><option value="2">2 beats</option><option value="bar">1 bar</option>
       </select></span>
     </span>
-    </span>
-    <span class="og" role="group" aria-label="Shape"><span class="og-h"><span class="og-t" aria-hidden="true" title="How long one pass is and where it starts">Shape</span>
-    <span class="grp"><label class="lbl" for="lenSel">Length</label>
-      <select id="lenSel" title="How long one pass is (T: phrase / fit bars / fit beats; - = step the fixed lengths)">
-        <option value="phrase">Phrase</option><option value="fitBeat">Fit beats</option><option value="fitBar">Fit bars</option>
-        <option value="1">1 beat</option><option value="2">2 beats</option><option value="3">3 beats</option><option value="4">4 beats</option>
-        <option value="bar1">1 bar</option><option value="bar2">2 bars</option><option value="bar4">4 bars</option>
-      </select></span></span>
-    <span class="grp"><label class="lbl" for="startSel">Start</label>
-      <select id="startSel" title="Where a fixed-length window starts (, . slide it)">
-        <option value="beat">On the beat</option><option value="phrase">At the phrase</option><option value="half">Half beat</option>
-      </select></span>
-    <span class="grp"><label class="lbl" for="leadSel">Lead-in</label><select id="leadSel" title="Start a little before the phrase on every pass"></select></span>
-    <span class="grp"><label class="lbl" for="leadOutSel">Lead-out</label><select id="leadOutSel" title="Play a little past the phrase end on every pass"></select></span>
     </span>
     <span class="og-break" aria-hidden="true"></span>
     <span class="og" role="group" aria-label="Click"><span class="og-h click-h"><span class="og-t" aria-hidden="true" title="Metronome on the song’s own beats (C)">Click</span>
@@ -5273,6 +5344,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     s.loops = fixLoops([normLoop({ name: 'Loop 1', a: 0, b: Math.min(d, 30) }, d)]);
     s.activeLoopId = s.loops[0].id;
     s.uuid = newUuid(); s.sync = normSyncMeta(null); s.audioHint = null;
+    s.practice.length = 'fitBar'; // new songs start on Whole bars (saved songs keep what they have); without a grid it plays as Phrase
     state.songs.push(s);
     changed('songs', { songId: s.id });
     return s;
@@ -8846,7 +8918,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         if (w.fixed && w.text) {
           const parts = w.text.split(' · ');
           setChips(win, parts.map((t) => chip(t, /^shift/.test(t) || parts.length === 1 ? '' : 'win')));
-        } else setChips(win, [h('span', { class: 'note', text: 'Length ' + (w.length || 'phrase') + ': no fixed window' })]);
+        } else setChips(win, [h('span', { class: 'note', text: 'Sub-loop ' + (w.length || 'phrase') + ': no window' })]);
         win.title = w.fixed ? 'Window: ' + w.text : '';
         $('#phWinReset').disabled = !w.fixed || !w.shift;
       } else {
@@ -9071,6 +9143,63 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     for (const b of seg.querySelectorAll('button')) b.disabled = !g;
     seg.title = g ? 'Metronome on the song\'s own beats (C)' : NEED_GRID;
   }
+  // Sub-loop card (shape of one pass): Phrase as played · On the beat · Whole bars, plus a Window segment that exists only
+  // while a fixed length is set. `info` comes from main.js: { chip, desc, win (e.g. "2 beats"), prev (name of the radio Reset returns to) }.
+  // No grid: only Phrase as played works (the others say "Needs a bar grid (Grid tab)").
+  const SHAPE_TITLES = {
+    phrase: 'Phrase as played: the loop is exactly the selected phrase or run of phrases, edge to edge',
+    fitBeat: 'On the beat: the loop is stretched outward to the nearest beats, so it is a whole number of beats',
+    fitBar: 'Whole bars: the loop is stretched outward to bar lines, so it keeps the time signature (a whole number of bars)' };
+  function shape(song, info) {
+    const p = song.practice, g = song.grid, fixed = g ? GH.lengthBeats(g.beatsPerBar, p.length) : null;
+    const seg = $('#shapeSeg'), cur = fixed ? 'window' : g ? p.length : 'phrase';
+    seg.dataset.value = cur;
+    setChecked(seg, (b) => b.dataset.shape === cur);
+    for (const b of seg.querySelectorAll('button[data-shape]')) {
+      const v = b.dataset.shape;
+      if (v === 'window') continue;
+      b.disabled = !g && v !== 'phrase';
+      b.title = b.disabled ? v === 'fitBar' ? 'Whole bars: ' + NEED_GRID : 'On the beat: ' + NEED_GRID : SHAPE_TITLES[v];
+    }
+    const wb = $('#shapeWinBtn');
+    wb.hidden = !fixed;
+    wb.querySelector('.wv').textContent = info.win || '';
+    wb.title = 'Window: a fixed length of ' + (info.win || '') + ' on the grid';
+    seg.title = g ? 'Sub-loop shape (T cycles)' : 'Phrase as played only. On the beat and Whole bars: ' + NEED_GRID;
+    $('#shapeWin').hidden = !fixed;
+    $('#winReset').title = 'Back to ' + (info.prev || 'Whole bars') + ', the shape you had before the window';
+    $('#shapeHint').hidden = !!fixed;
+    const chip = $('#shapeChip');
+    chip.hidden = !info.chip;
+    if (chip.textContent !== info.chip) chip.textContent = info.chip || '';
+    const d = $('#shapeDesc');
+    if (d.textContent !== info.desc) { d.textContent = info.desc; d.title = info.desc; }
+    groupLines();
+  }
+  // Options disclosure (Start, Lead-in, Lead-out): open / closed is a per-viewer preference; a dot on the button and its
+  // tooltip name every non-default value while it is closed.
+  function optionsOpen(open) {
+    if (open !== undefined) U.prefs.set('shapeOpts', !!open);
+    const on = !!U.prefs.get('shapeOpts');
+    options(SLP.store.song());
+    return on;
+  }
+  function options(song) {
+    const p = song.practice, on = !!U.prefs.get('shapeOpts'), g = song.grid;
+    const fixed = g ? GH.lengthBeats(g.beatsPerBar, p.length) : null;
+    const txt = (id) => { const o = $(id).selectedOptions[0]; return o ? o.textContent : ''; };
+    const set = [];
+    if (p.leadIn) set.push('Lead-in ' + txt('#leadSel'));
+    if (p.leadOut) set.push('Lead-out ' + txt('#leadOutSel'));
+    if (p.windowStart !== 'beat') set.push('Start ' + txt('#startSel').toLowerCase());
+    const btn = $('#optBtn');
+    $('#shapeOpts').hidden = !on;
+    btn.setAttribute('aria-expanded', String(on));
+    $('#optDot').hidden = on || !set.length;
+    btn.title = (on ? 'Hide the options' : set.length ? 'Options set: ' + set.join(' · ') : 'Options: Lead-in, Lead-out, window Start');
+    const note = fixed ? 'Lead-in and Lead-out are not used with a window.' : 'Start is used only with a window.';
+    if ($('#optNote').textContent !== note) $('#optNote').textContent = note;
+  }
   // Options-row layout pass (after a render and on resize).
   //  · Narrow windows (≤ 1300 px): the controls wrap one by one, but the Click pattern, volume and Accent stay together
   //    (.glued) when that costs no extra line and leaves the practice text at least 360 px (or its full text); decided from
@@ -9089,7 +9218,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     }
     let prevTop = null;
     for (const el of U.$$('section.practice > *')) {
-      if (el.hidden || el.classList.contains('practice-text') || el.classList.contains('og-break')) continue;
+      if (el.hidden || el.id === 'subloop' || el.classList.contains('practice-text') || el.classList.contains('og-break')) continue;
       const isGroup = el.classList.contains('og');
       for (const c of isGroup ? el.children : [el]) {
         if (c.hidden || getComputedStyle(c).display === 'none') continue;
@@ -9117,25 +9246,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       $(id).title = fixed ? NOT_FIXED + ': the window is exactly the chosen number of beats (Length Phrase or Fit uses it)' : tip;
       $(id).parentElement.title = $(id).title;
     }
-    // Length: the fixed lengths and the fits need a grid; a dragged length not in the list shows as "N beats"
-    const len = $('#lenSel');
-    for (const o of len.options) { o.disabled = !g && o.value !== 'phrase'; o.title = o.disabled ? NEED_GRID : ''; }
-    const custom = typeof p.length === 'number' && ![1, 2, 3, 4].includes(p.length) ? String(p.length) : '';
-    let co = len.querySelector('option[data-custom]');
-    if (custom && (!co || co.value !== custom)) {
-      if (co) co.remove();
-      co = h('option', { value: custom, 'data-custom': '1', text: custom + ' beats' });
-      len.insertBefore(co, len.querySelector('option[value="bar1"]'));
-    } else if (!custom && co) co.remove();
-    setIfIdle(len, g ? String(p.length) : 'phrase');
-    len.title = g ? 'How long one pass is: the phrase, fitted to beats / bars, or a fixed number of beats (T cycles phrase / fit bars / fit beats; - and = step the fixed lengths)'
-      : 'Phrase only. Fit and fixed lengths: ' + NEED_GRID;
     const st = $('#startSel');
     st.disabled = !fixed;
     setIfIdle(st, p.windowStart);
     st.title = fixed ? 'Where the window starts: on the beat (bar line for the bar lengths) at or before the phrase, exactly at the phrase, or on the half beat (, . slide it)'
-      : 'Used with a fixed length (Length 1 beat … 4 bars)';
+      : 'Used only with a window (a fixed length: press = or Shift-drag on the waveform)';
     st.parentElement.title = st.title;
+    options(song);
     clickControl(g ? p.click : 'off', g, p.clickAccent);
     const on = !!g && p.click !== 'off';
     $('#clickOpts').hidden = !on;
@@ -9185,7 +9302,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     el.hidden = !text;
   }
 
-  SLP.panels = { init, KEYS, songs, loops, phrases, scrollPhraseIntoView, detectProgress, inspector, transport, time, pos, practice, practiceText, clickHint, history,
+  SLP.panels = { init, KEYS, songs, loops, phrases, scrollPhraseIntoView, detectProgress, inspector, transport, time, pos, practice, shape, optionsOpen, practiceText, clickHint, history,
     GAP_NAMES, gapName, isPause, PAUSES, groupLines, musPos,
     get editingPhrase() { return editingId; } };
 })();
@@ -9370,6 +9487,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (phone && !moved.length) {
       const slot = $('#phoneTrade');
       for (const sel of MOVE) { const n = $(sel); moved.push([n, n.parentNode, n.nextSibling]); slot.append(n); }
+      // the Sub-loop card is the first block of the Practice tab
+      const sl = $('#subloop'), pr = $('section.practice');
+      moved.push([sl, sl.parentNode, sl.nextSibling]); pr.prepend(sl);
     } else if (!phone) {
       while (moved.length) { const [n, parent, next] = moved.pop(); parent.insertBefore(n, next); }
     }
@@ -10474,11 +10594,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         grid: s.grid, hasAudio: E.hasAudio, beatsBusy: !!app.beats, snap: snapMode(), fitUndo: fitUndoValid(),
         tap: app.tap ? { taps: app.tap.taps.length, clean: GH.cleanTaps(app.tap.taps), playing: !!app.st.playing } : null,
         take: takeValid() ? app.take.applied : null, barSel: s.grid ? barSelIndex() : null,
-        win: fp ? { text: windowText(fp), fixed: !!fixedBeats(), shift: fp.shift || 0, length: lenName(s.practice.length) } : null,
+        win: fp ? { text: windowText(fp), fixed: !!fixedBeats(), shift: fp.shift || 0, length: (SHAPE_NAMES[s.practice.length] || lenName(s.practice.length)).toLowerCase() } : null,
         peaks: E.peaks, play: pi, lenText: pi ? lengthText(pi) : '', selected, playhead: E.hasAudio ? E.time : null });
     }
     if (has('transport')) P.transport({ song: s, st: app.st, hasAudio: E.hasAudio, engineText: engineText(), smooth: app.st.smooth === 'ready' && app.st.mode === 'buffer' });
     if (has('practice')) P.practice(s);
+    if (has('practice') || has('practiceText') || has('phrases') || has('loops') || has('insp')) { noteShape(); P.shape(s, shapeInfo()); }
     if (has('practice') || has('transport')) P.clickHint(clickHintText());
     if (has('practiceText') || has('practice') || has('phrases')) P.practiceText(practiceParts());
     if (has('hist')) P.history(S.history);
@@ -10808,7 +10929,6 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const blurAfter = (el, fn) => el.addEventListener('change', (e) => { fn(e.target.value); e.target.blur(); });
   blurAfter($('#leadSel'), (v) => { S.setPractice({ leadIn: Number(v) }); applyPractice(); W.invalidate(); });
   blurAfter($('#leadOutSel'), (v) => { S.setPractice({ leadOut: Number(v) }); applyPractice(); W.invalidate(); });
-  blurAfter($('#lenSel'), (v) => setLength(/^\d+$/.test(v) ? Number(v) : v));
   blurAfter($('#startSel'), (v) => setStart(v));
   blurAfter($('#clickWhen'), (v) => setClickWhen(v));
   blurAfter($('#countInSel'), (v) => { S.setPractice({ countIn: v === 'bar' ? 'bar' : Number(v) }); applyClick(); });
@@ -10820,10 +10940,27 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // ---------- Length (rev 2) ----------
   const LEN_NAMES = { phrase: 'phrase', fitBeat: 'fit beats', fitBar: 'fit bars', bar1: '1 bar', bar2: '2 bars', bar4: '4 bars' };
   const lenName = (v) => (typeof v === 'number' ? v + (v === 1 ? ' beat' : ' beats') : LEN_NAMES[v] || String(v));
+  // Sub-loop card: the three radios write practice.length 'phrase' | 'fitBeat' | 'fitBar'; a fixed length is the Window.
+  // The radio that was selected before a window is remembered (per song, in memory) for the Window's Reset.
+  const SHAPE_NAMES = { phrase: 'Phrase as played', fitBeat: 'On the beat', fitBar: 'Whole bars' };
+  const lastShape = new Map();
+  function noteShape() { const l = song().practice.length; if (SHAPE_NAMES[l]) lastShape.set(song().id, l); }
+  function shapeInfo() {
+    const s = song(), p = s.practice, g = s.grid, pi = playInfo(), n = fixedBeats();
+    const cur = n ? 'window' : g ? p.length : 'phrase';
+    const secs = (x) => x.toFixed(1) + ' s';
+    const chip = !pi ? '' : cur === 'phrase' || cur === 'window' ? secs(pi.end - pi.start) : lengthText(pi);
+    const desc = cur === 'window' ? 'A fixed window of ' + lenName(n) + (isBarLen(p.length) ? ' (' + lenName(p.length) + ')' : '') + ' on the grid, starting ' + START_NAMES[p.windowStart] + '. Slide it with , and . (Shift: half a beat), resize with = and −.'
+      : cur === 'fitBeat' ? 'Stretched outward to the nearest beats, so the loop is a whole number of beats.'
+        : cur === 'fitBar' ? 'Stretched outward to bar lines, so the loop keeps the time signature: always a whole number of bars.'
+          : 'Loops exactly the selected phrase or run of phrases, edge to edge.' + (g ? '' : ' On the beat and Whole bars: Needs a bar grid (Grid tab).');
+    return { chip, desc, win: n ? lenName(p.length) : '', prev: SHAPE_NAMES[lastShape.get(s.id)] || 'Whole bars' };
+  }
   const START_NAMES = { beat: 'on the beat', phrase: 'at the phrase', half: 'on the half beat' };
   // Fit bars keeps passes whole bars: lead-in / lead-out choices that are not whole bars round up (one undo step).
   function setLength(v) {
     if (v !== 'phrase' && !needGrid()) { queue('practice'); return; }
+    noteShape();
     let extra = '';
     const wasFixed = !!fixedBeats();
     S.transact('length: ' + lenName(v), () => {
@@ -10842,8 +10979,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     // Z / Loop go back and stay respected while stepping between fixed lengths.
     let zoomed = '';
     if (n && !wasFixed && rangeNow() && !isRun() && !W.free && U.prefs.get('zoomScope') !== 'phrase') { setScope('phrase'); zoomed = ' Zoomed to the window (Z: whole loop).'; }
-    U.status('Length: ' + lenName(v) + (n ? ': each pass is exactly ' + lenName(n) + ' on the grid, starting ' + START_NAMES[song().practice.windowStart] + ' (, . slide it).'
-      : v === 'phrase' ? '.' : ': each pass is a whole number of ' + (v === 'fitBar' ? 'bars' : 'beats') + '.') + extra + zoomed);
+    U.status(n ? 'Window: ' + lenName(n) + ' on the grid, starting ' + START_NAMES[song().practice.windowStart] + ' (, . slide it).' + extra + zoomed
+      : 'Sub-loop: ' + SHAPE_NAMES[v] + (v === 'phrase' ? ': the phrase, edge to edge.' : ': each pass is a whole number of ' + (v === 'fitBar' ? 'bars' : 'beats') + '.') + extra + zoomed);
   }
   function setStart(v) {
     S.setPractice({ windowStart: v });
@@ -10922,6 +11059,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const c = windowEdgeCalc(which, t, ev);
     if (phase !== 'end') return c ? (which === 'end' ? c.end : c.start) : t;
     if (!c) return t;
+    noteShape();
     S.transact('drag window of phrase ' + (loop().phrases.indexOf(c.ph) + 1), () => {
       if (c.len !== song().practice.length) S.setPractice({ length: c.len });
       S.setPhraseShift(loop().id, c.ph.id, c.shift);
@@ -11108,7 +11246,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function segKeys(seg, choose, opensMenu) {
     seg.addEventListener('keydown', (e) => {
       if (e.altKey || e.metaKey || e.ctrlKey) return;
-      const all = [...seg.querySelectorAll(':scope > button')], live = all.filter((b) => !b.disabled);
+      const all = [...seg.querySelectorAll(':scope > button')], live = all.filter((b) => !b.disabled && !b.hidden);
       const cur = all.indexOf(document.activeElement);
       if (cur < 0 || !live.length) return;
       let next = null;
@@ -11135,6 +11273,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     setClickMode(b.dataset.click);
   });
   segKeys(clickSeg, (b) => setClickMode(b.dataset.click));
+  // Sub-loop radios: one click = one shape (Window is a state, not a choice: clicking it changes nothing)
+  const shapeSeg = $('#shapeSeg');
+  const chooseShape = (v) => { if (v === 'window' || song().practice.length === v) return; setLength(v); };
+  shapeSeg.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-shape]');
+    if (!b || b.disabled) return;
+    chooseShape(b.dataset.shape);
+  });
+  segKeys(shapeSeg, (b) => chooseShape(b.dataset.shape));
+  $('#winPrev').addEventListener('click', (e) => slideWindow(e.shiftKey ? -1 : -2));
+  $('#winNext').addEventListener('click', (e) => slideWindow(e.shiftKey ? 1 : 2));
+  $('#winReset').addEventListener('click', () => { const v = lastShape.get(song().id) || 'fitBar'; setLength(v); });
+  $('#optBtn').addEventListener('click', () => { P.optionsOpen(!U.prefs.get('shapeOpts')); queue('practice'); });
 
   blurAfter($('#advSel'), (v) => S.setPractice({ advanceEvery: Number(v) }));
   $('#cumBtn').addEventListener('click', () => {
