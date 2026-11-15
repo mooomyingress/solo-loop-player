@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VKjFFlGuKalO1mMCDaJMj92517+89ZgfNed6nqbEDxQ='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gdq2WwEEygyEudVs4XT58khHVuyDyzCEoVSKRnnbu9c='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -646,16 +646,20 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   :root { --statusbar: #1b1f27; --sa-t: env(safe-area-inset-top, 0px); --sa-r: env(safe-area-inset-right, 0px); --sa-b: env(safe-area-inset-bottom, 0px); --sa-l: env(safe-area-inset-left, 0px); }
   :root[data-theme="dark"] { --statusbar: var(--bg); }
   .update-chip { right: max(12px, var(--sa-r)); bottom: calc(max(4px, var(--sa-b)) + 62px); height: 40px; padding: 0 18px; border-radius: 20px; font-size: 15px; }
-  html, body { position: fixed; inset: 0; overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
+  /* Full screen (2026-11 fix: an installed iPhone app was 59 px short, the height of the status bar). html and body fill the
+     page and never scroll; the app is pinned to all four edges, its padding = the safe-area insets. ui-phone.js measures the
+     real screen on resize / orientationchange / pageshow / visualViewport and, only when an installed app's viewport is
+     shorter than the screen, sets --app-h (the screen height) and --panel-h (the height of the tab's panel). */
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
     -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
   body { font-size: 15px; }
   .app {
-    height: 100%; min-width: 0;
+    position: fixed; inset: 0; height: var(--app-h, auto); min-width: 0;
     padding: max(6px, var(--sa-t)) max(8px, var(--sa-r)) max(4px, var(--sa-b)) max(8px, var(--sa-l));
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(254px, 1fr) auto auto minmax(150px, 1.25fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto var(--panel-h, 316px) auto;
     grid-template-areas: "top" "lanes" "transport" "status" "content" "tabs";
-    gap: 5px;
+    gap: 4px;
   }
   /* the translucent status bar of the installed app: its strip is painted (white clock and battery stay readable) */
   .app::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: var(--sa-t); background: var(--statusbar); z-index: 35; pointer-events: none; }
@@ -675,8 +679,14 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .appname, .topbar > .sep, .tb-hist, #songRename, #songAdd, #songDel, #audioName, .topbar > .spacer, #loadAudio, #moreBtn { display: none !important; }
   .tb-songs { flex: 1 1 0; min-width: 0; }
   #songSel, #songName { flex: 1 1 auto; min-width: 0; max-width: none; width: 100%; height: 44px; font-weight: 600; }
-  #syncWrap { position: static; flex: 0 0 auto; min-width: 44px; max-width: 34vw; display: flex; }
-  .sync-chip { max-width: 100%; min-width: 44px; height: 44px; padding: 0 10px; font-size: 13px; }
+  #syncWrap { position: static; flex: 0 0 44px; display: flex; }
+  .sync-chip { position: relative; width: 44px; max-width: none; min-width: 44px; height: 44px; padding: 0; justify-content: center; font-size: 13px; }
+  .sync-chip > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* words: the Sync panel and the title */
+  .sync-chip .ic { width: 20px; height: 20px; }
+  .sync-chip::after { content: ""; position: absolute; right: 6px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--faint); box-shadow: 0 0 0 2px var(--panel); }
+  .sync-chip[data-state="idle"]::after { background: var(--phrase); }
+  .sync-chip[data-state="syncing"]::after { background: var(--accent); }
+  .sync-chip[data-state="error"]::after, .sync-chip[data-state="offline"]::after { background: var(--warn); }
   #phoneMenuWrap { position: static; flex: none; }
   .phone-menu {
     position: fixed; top: calc(max(6px, var(--sa-t)) + 50px); right: max(8px, var(--sa-r)); left: auto;
@@ -704,7 +714,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .keys, #miKeys { display: none !important; }
 
   /* lanes: a toolbar row (Loop / Phrase view, previous / next phrase, Edit handles), then the four canvases full width */
-  .lanes { grid-area: lanes; position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px 28px 22px minmax(80px, 1fr) 42px; border-radius: 10px; }
+  .lanes { grid-area: lanes; position: relative; grid-template-columns: minmax(0, 1fr); grid-template-rows: 45px 20px 22px minmax(0, 1fr) 34px; border-radius: 10px; min-height: 0; overflow: hidden; }
   .lanes > .gut:not(.wave) { display: none; }
   .lanes .gut.wave { grid-row: 1; grid-column: 1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 5px; padding: 0 4px; border-right: 0; border-bottom: 1px solid var(--line); }
   .lanes .row-ov { grid-row: 2; grid-column: 1; }
@@ -715,30 +725,42 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .lanes .row-bars, .lanes .row-wave, .lanes .row-phr { border-top: 1px solid var(--line); }
   .lanes canvas { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   .gut.wave button { height: 44px; min-width: 44px; padding: 0 9px; font-size: 14px; }
-  .gut.wave button[data-scope] { min-width: 56px; }
+  .lanes .gut.wave { gap: 6px; padding: 0 2px; }
+  /* Loop | Phrase as one two-segment toggle; the phrase steppers as icon buttons (accessible names on the buttons) */
+  .gut.wave button[data-scope] { min-width: 62px; border-radius: 0; }
+  .gut.wave button[data-scope="loop"] { border-radius: 8px 0 0 8px; }
+  .gut.wave button[data-scope="phrase"] { border-radius: 0 8px 8px 0; margin-left: -6px; }
+  .gut.wave button[data-scope][aria-pressed="true"], .gut.wave button[data-scope].on, .gut.wave button[data-scope][aria-selected="true"] { position: relative; z-index: 1; }
+  .gut .tb-w { display: none; }
+  .gut .tb-ch { font-size: 26px; line-height: 1; font-weight: 400; margin-top: -3px; }
+  #phPrev, #phNext { width: 44px; padding: 0; justify-content: center; }
   .gut .z-key { display: none; }
   .gut .tb-gap { flex: 1; }
   #editHandles[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .gut .free-ind { position: absolute; left: 8px; top: 106px; z-index: 2; padding: 0 8px; background: var(--panel); pointer-events: none; }
+  .gut .free-ind { position: absolute; left: 8px; top: 92px; z-index: 2; padding: 0 8px; background: var(--panel); pointer-events: none; }
   .cv-empty { font-size: 14px; line-height: 1.4; }
 
   /* transport: Play · To start · Loop | time + position ; speed presets + slider ; Trade + practice text + engine */
   .bar.transport {
-    grid-area: transport; display: grid; grid-template-columns: 82px 54px 54px minmax(0, 1fr); grid-template-rows: 56px 44px 44px;
-    column-gap: 5px; row-gap: 4px; padding: 5px 6px; border-radius: 10px; align-items: center;
+    grid-area: transport; display: grid; grid-template-columns: 76px 50px 50px minmax(0, 1fr); grid-template-rows: 48px 44px 44px;
+    column-gap: 5px; row-gap: 3px; padding: 4px 6px; border-radius: 10px; align-items: center;
   }
   .bar.transport > .sep, .bar.transport label[for="rate"] { display: none; }
-  #play { grid-row: 1; grid-column: 1; height: 56px; min-width: 0; font-size: 17px; border-radius: 10px; gap: 8px; }
+  #play { grid-row: 1; grid-column: 1; height: 48px; min-width: 0; font-size: 17px; border-radius: 10px; gap: 8px; }
   #play svg.glyph { width: 14px; height: 14px; }
-  #toStart, #loopToggle { grid-row: 1; height: 56px; padding: 0 2px; flex-direction: column; justify-content: center; gap: 3px; font-size: 11.5px; border-radius: 10px; }
+  #toStart, #loopToggle { grid-row: 1; height: 48px; padding: 0 2px; flex-direction: column; justify-content: center; gap: 2px; font-size: 11.5px; border-radius: 10px; }
   #toStart { grid-column: 2; } #loopToggle { grid-column: 3; }
   #toStart .ic, #loopToggle .ic { margin: 0; width: 18px; height: 18px; }
-  .bar.transport .time { grid-row: 1; grid-column: 4; align-self: start; margin: 7px 0 0 6px; font-size: 0; }
+  .bar.transport .time { grid-row: 1; grid-column: 4; align-self: start; margin: 3px 0 0 6px; font-size: 0; }
   .bar.transport .time #now { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
   .bar.transport .time #dur { display: none; }
-  .bar.transport .pos { grid-row: 1; grid-column: 4; align-self: end; margin: 0 0 8px 6px; width: auto; font-size: 13px; color: var(--muted); }
-  .bar.transport .pos.outside { color: var(--faint); }
-  .bar.transport .presets { grid-row: 2; grid-column: 1 / span 3; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  /* the readout line under the time: position in the form, then the engine status (ui-phone.js builds #phReadout) */
+  .bar.transport #phReadout { grid-row: 1; grid-column: 4; align-self: end; display: flex; min-width: 0; margin: 0 0 4px 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  #phReadout .pos { flex: 0 1 auto; min-width: 0; width: auto; margin: 0; overflow: hidden; text-overflow: ellipsis; font-size: inherit; color: inherit; }
+  #phReadout .pos.outside { color: var(--faint); }
+  #phReadout .engine { flex: none; font-size: inherit; color: var(--muted); }
+  #phReadout .engine:not(:empty)::before { content: " · "; white-space: pre; }
+  .bar.transport .presets { grid-row: 2; grid-column: 1 / span 3; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
   .bar.transport .presets button { padding: 0; gap: 0; justify-content: center; font-size: 14px; font-variant-numeric: tabular-nums; }
   .bar.transport .presets button::after { content: "%"; color: var(--muted); font-size: 12px; margin-left: 1px; }
   .bar.transport .grp:not(.presets) { grid-row: 2; grid-column: 4; display: flex; gap: 6px; padding-left: 4px; min-width: 0; }
@@ -753,12 +775,11 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .phone-trade .practice-text { flex: 1 1 0; min-width: 0; width: 0; margin: 0; font-size: 13px; justify-content: flex-start; }
   .phone-trade .practice-text .pt-extra { display: none; }
   .phone-trade .hint-inline { font-size: 12px; margin-right: 6px; min-width: 0; }
-  .phone-trade .engine { flex: 0 1 auto; max-width: 42%; font-size: 12px; text-align: right; }
 
-  /* status: up to two lines, above the panels */
+  /* status: one line at most, above the panels */
   .status:has(> .msg:empty):has(> #statusAsk:empty):has(> .progress:empty) { min-height: 0; }
-  .status { grid-area: status; min-height: 18px; padding: 0 4px; font-size: 12.5px; line-height: 1.3; white-space: normal; flex-wrap: wrap; row-gap: 4px; }
-  .status .msg { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1 1 100%; }
+  .status { grid-area: status; min-height: 17px; padding: 0 4px; font-size: 12.5px; line-height: 1.3; white-space: normal; flex-wrap: wrap; row-gap: 4px; }
+  .status .msg { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; flex: 1 1 100%; }
   .status #statusAsk:empty, .status > .spacer { display: none; }
   .status #statusAsk { flex-wrap: wrap; gap: 6px; }
   .status #statusAsk button { height: 44px; }
@@ -772,25 +793,42 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .app[data-ptab="practice"] .bar.practice { display: block; }
   /* Loops: the tab names the panel, so no header; the list and Add / Duplicate / Delete */
   .panel.loops .panel-head { display: none; }
-  /* Phrases as one grid: Fewer – More and Whole loop on top, the list, then one row of seven actions (icon over word) */
-  .app[data-ptab="phrases"] .panel.phrases { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: 46px minmax(0, 1fr) 56px; }
-  .panel.phrases .panel-head, .panel.phrases .panel-foot { display: contents; }
-  .panel.phrases .panel-head h2, .panel.phrases #phrMeta, .panel.phrases .spacer { display: none; }
+  /* Phrases: a slim top row (Fewer - More, Select, Whole loop), the list, one row of icon-over-word actions (Split, Merge, Delete,
+     Add, Star, More: Re-detect and Replace all live in More). While Select is on the action row becomes the selection bar. */
+  .app[data-ptab="phrases"] .panel.phrases { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 44px minmax(0, 1fr) 48px; }
+  .panel.phrases .panel-head { display: contents; }
+  .panel.phrases .panel-head h2, .panel.phrases #phrMeta, .panel.phrases .panel-head .spacer, .panel.phrases #detectBtn, .panel.phrases #detectAll { display: none; }
   .panel.phrases .detect-line .ic, .app .panel.phrases #wholeBtn .ic { display: none; }
-  .panel.phrases .detect-line { grid-row: 1; grid-column: 1 / 6; border-bottom: 1px solid var(--line); padding: 0 6px 0 12px; min-height: 0; }
-  .panel.phrases #wholeBtn { grid-row: 1; grid-column: 6 / 8; align-self: center; margin: 0 6px 0 2px; justify-content: center; padding: 0 6px; font-size: 14px; }
-  .panel.phrases .list { grid-row: 2; grid-column: 1 / -1; }
-  .panel.phrases .panel-foot button, .panel.phrases #detectBtn, .panel.phrases #detectAll {
-    grid-row: 3; height: 48px; margin: 4px 0; padding: 0 1px; flex-direction: column; justify-content: center; gap: 2px;
-    font-size: 10.5px; line-height: 1.08; white-space: normal; text-align: center; overflow: hidden; border-radius: 8px; }
-  .panel.phrases #detectBtn { grid-column: 1; margin-left: 5px; } .panel.phrases #detectAll { grid-column: 2; }
-  .panel.phrases #phSplit { grid-column: 3; } .panel.phrases #phMerge { grid-column: 4; } .panel.phrases #phDel { grid-column: 5; }
-  .panel.phrases #phAdd { grid-column: 6; } .panel.phrases #phStar { grid-column: 7; margin-right: 5px; }
-  .panel.phrases { column-gap: 3px; }
-  .app .panel.phrases .panel-head button .ic, .app .panel.phrases .panel-foot button .ic { display: inline-block; margin: 0; width: 18px; height: 18px; flex: none; }
-  .panel.phrases .list { border-bottom: 1px solid var(--line); }
+  .panel.phrases .detect-line { grid-row: 1; grid-column: 1; padding: 0 4px 0 10px; min-height: 0; gap: 8px; border-bottom: 0; }
+  .panel.phrases .detect-line .lbl { font-size: 13px; flex: none; }
+  .panel.phrases .detect-line input[type="range"] { flex: 1 1 0; min-width: 24px; width: auto; }
+  .panel.phrases .detect-line .progress { display: none; }
+  .panel.phrases #phSelect, .panel.phrases #wholeBtn { grid-row: 1; align-self: center; height: 44px; margin: 0 4px 0 0; justify-content: center; padding: 0 10px; font-size: 14px; }
+  .panel.phrases #phSelect { grid-column: 2; }
+  .panel.phrases #wholeBtn { grid-column: 3; }
+  #phSelect[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .panel.phrases .list { grid-row: 2; grid-column: 1 / -1; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 1px 6px; }
+  .panel.phrases .panel-foot { grid-row: 3; grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; padding: 2px 6px; }
+  .panel.phrases .panel-foot .spacer { display: none; }
+  .panel.phrases .panel-foot > button { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 1px; flex-direction: column; justify-content: center; gap: 1px;
+    font-size: 11px; line-height: 1.1; white-space: nowrap; text-align: center; overflow: hidden; border-radius: 8px; }
+  .panel.phrases .lw-x { display: none; }
+  .app .panel.phrases .panel-foot > button .ic { display: inline-block; margin: 0; width: 18px; height: 18px; flex: none; }
+  #phMoreMenu { position: fixed; top: auto; left: auto; z-index: 30; min-width: 230px; flex-direction: column; }
+  #phMoreMenu:not([hidden]) { display: flex; }
+  #phMoreMenu .ic { display: inline-block; flex: none; }
+  #phMoreMenu button { display: flex; width: 100%; justify-content: flex-start; }
+  .app.selecting .panel.phrases .panel-foot > button { display: none; }
+  .panel.phrases .selbar { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; }
+  .panel.phrases .selbar[hidden] { display: none; }
+  .panel.phrases .sel-text { flex: 1 1 0; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .panel.phrases .selbar button { flex: none; height: 44px; padding: 0 16px; justify-content: center; }
+  /* Select on: a ring on every row that fills with a check mark when the phrase is part of the selection */
+  .app.selecting .phrases .row .n { box-sizing: border-box; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; text-align: center; font-size: 12px; position: relative; }
+  .app.selecting .phrases .row.sel .n { background: var(--phrase); border-color: var(--phrase); color: transparent; }
+  .app.selecting .phrases .row.sel .n::after { content: ""; position: absolute; left: 7px; top: 3px; width: 6px; height: 11px; border: solid var(--on-phrase, #fff); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
   .phone-tabs { grid-area: tabs; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding-top: 1px; }
-  .phone-tabs button { height: 50px; flex-direction: column; justify-content: center; gap: 2px; padding: 0 2px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 10px; }
+  .phone-tabs button { height: 46px; flex-direction: column; justify-content: center; gap: 2px; padding: 0 2px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 10px; }
   .phone-tabs button .ic { width: 20px; height: 20px; margin: 0; }
   .phone-tabs button[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); font-weight: 650; }
   .panel-head { min-height: 50px; padding: 4px 8px 4px 12px; gap: 6px; }
@@ -1061,8 +1099,8 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
       <button type="button" data-scope="phrase" title="Zoom to the current phrase (Z)">Phrase</button>
       <span class="free-ind" id="freeInd" hidden title="Free view (two fingers pan, pinch zooms, right-drag pans). Loop, Phrase, Z or a double-click return to the automatic view">Free</span>
       <span class="tb-gap phone-only"></span>
-      <button type="button" class="phone-only" id="phPrev" title="Previous phrase (or swipe right on the phrase lane)" aria-label="Previous phrase">‹ Phrase</button>
-      <button type="button" class="phone-only" id="phNext" title="Next phrase (or swipe left on the phrase lane)" aria-label="Next phrase">Phrase ›</button>
+      <button type="button" class="phone-only" id="phPrev" title="Previous phrase (or swipe right on the phrase lane)" aria-label="Previous phrase"><span class="tb-ch" aria-hidden="true">‹</span><span class="tb-w"> Phrase</span></button>
+      <button type="button" class="phone-only" id="phNext" title="Next phrase (or swipe left on the phrase lane)" aria-label="Next phrase"><span class="tb-w">Phrase </span><span class="tb-ch" aria-hidden="true">›</span></button>
       <button type="button" class="phone-only" id="editHandles" aria-pressed="false" title="Edit handles: drag A / B, phrase edges, the window and bar lines with one finger">Edit</button>
     </div>
     <div class="cv row-wave"><canvas id="cvWave" role="img" aria-label="Zoomed waveform. Drag A and B to adjust the loop."></canvas><div class="cv-empty" id="waveEmpty"></div></div>
@@ -1188,6 +1226,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
         <span class="spacer"></span>
         <button type="button" id="detectBtn" title="Detect phrases in this loop; keeps edited, starred and named phrases (D)"><svg class="ic" aria-hidden="true"><use href="#i-detect"/></svg>Detect</button>
         <button type="button" id="detectAll" title="Detect again and replace every phrase, including edited ones (two clicks)"><svg class="ic" aria-hidden="true"><use href="#i-replace"/></svg>Replace all</button>
+        <button type="button" class="phone-only" id="phSelect" aria-pressed="false" title="Select several phrases: while it is on, a tap on a phrase extends the selection like Shift-click on a computer (a long press on a row turns it on)">Select</button>
         <button type="button" id="wholeBtn" title="Back to the whole loop (Esc)"><svg class="ic" aria-hidden="true"><use href="#i-whole"/></svg>Whole loop</button>
       </div>
       <div class="detect-line">
@@ -1200,11 +1239,18 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
       <ol class="list" id="phraseList"></ol>
       <div class="panel-foot">
         <button type="button" id="phSplit" title="Split at the playhead (S)"><svg class="ic" aria-hidden="true"><use href="#i-split"/></svg>Split</button>
-        <button type="button" id="phMerge" title="Merge with the next phrase (M)"><svg class="ic" aria-hidden="true"><use href="#i-merge"/></svg>Merge next</button>
+        <button type="button" id="phMerge" aria-label="Merge with the next phrase" title="Merge with the next phrase (M)"><svg class="ic" aria-hidden="true"><use href="#i-merge"/></svg>Merge<span class="lw-x"> next</span></button>
         <button type="button" id="phDel" title="Delete the phrase (Shift+Backspace)"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Delete</button>
-        <button type="button" id="phAdd" title="Add a phrase at the playhead"><svg class="ic" aria-hidden="true"><use href="#i-addhead"/></svg>Add at playhead</button>
+        <button type="button" id="phAdd" aria-label="Add a phrase at the playhead" title="Add a phrase at the playhead"><svg class="ic" aria-hidden="true"><use href="#i-addhead"/></svg>Add<span class="lw-x"> at playhead</span></button>
         <span class="spacer"></span>
         <button type="button" id="phStar" title="Star the phrase (F)"><svg class="ic" aria-hidden="true"><use href="#i-star"/></svg>Star</button>
+        <button type="button" class="phone-only" id="phMore" aria-haspopup="menu" aria-expanded="false" aria-controls="phMoreMenu" title="More: re-detect, replace all phrases"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg>More</button>
+        <div class="menu phone-only" id="phMoreMenu" role="menu" aria-label="More phrase actions" hidden></div>
+        <div class="selbar phone-only" id="selBar" hidden>
+          <span class="sel-text" id="selText" role="status" aria-live="polite"></span>
+          <button type="button" id="selClear" title="Clear the selection: back to the whole loop">Clear</button>
+          <button type="button" id="selDone" class="primary" title="Leave Select; the selection stays for playback">Done</button>
+        </div>
       </div>
     </div>
 
@@ -6611,10 +6657,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // Drop passes that have not started; the next tick reschedules them with the current settings,
   // from the same boundary. This is how changes "take effect at the next pass boundary".
   // A dropped ghost is decided again (with the current settings) from the pass it followed.
+  // A `continuous` pass (handover or speed change: playback goes on from where it was heard) is never dropped, even
+  // while it is still a few ms from starting: rescheduling would restart the range from its first second and, until the
+  // next tick, bufferTime would report the stale paused position (the playhead jumping to the chorus start).
   function dropFuture() {
     const now = ctx.currentTime;
-    const keep = passes.filter((p) => p.when <= now + SAFE / 2);
-    const drop = passes.filter((p) => p.when > now + SAFE / 2);
+    const keepIt = (p) => p.when <= now + SAFE / 2 || (p.continuous && !p.ghost);
+    const keep = passes.filter(keepIt);
+    const drop = passes.filter((p) => !keepIt(p));
     for (const p of drop) stopPass(p, now);
     passes = keep;
     if (drop.length && keep.length && drop[0].ghost) {
@@ -6683,7 +6733,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const cur = currentPass(now);
     if (!cur) { // not audible yet: a continuous start extrapolates back, a fresh one waits at s0
       const f = passes[0];
-      if (!f) return pausedAt;
+      if (!f) return pendingWhen !== null ? bounds().start : pausedAt; // passes dropped, the next one starts at the span start
       return f.continuous ? f.s0 - (f.when - now) * f.rate : f.s0;
     }
     if (now < cur.end) {
@@ -8737,7 +8787,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function songs(state, song, hasAudio) {
     const sel = $('#songSel');
     sel.textContent = '';
-    for (const s of state.songs) sel.append(h('option', { value: s.id, text: s.title + (s.artist ? ' · ' + s.artist : ''), selected: s.id === song.id }));
+    for (const s of state.songs) sel.append(h('option', { value: s.id, text: s.title + (s.artist && !(SLP.phone && SLP.phone.on) ? ' · ' + s.artist : ''), title: s.title + (s.artist ? ' · ' + s.artist : ''), selected: s.id === song.id }));
     sel.value = song.id;
     $('#songDel').disabled = state.songs.length <= 1;
     const name = $('#audioName'), hint = !song.audioName && song.audioHint;
@@ -8850,6 +8900,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     $('#detectBtn').disabled = !v.hasAudio;
     $('#detectAll').disabled = !v.hasAudio;
     $('#wholeBtn').disabled = !v.selected.size;
+    if (SLP.phone && SLP.phone.selUpdate) SLP.phone.selUpdate(v);
     const has = !!v.focusId;
     $('#phMerge').disabled = !has;
     $('#phDel').disabled = !has;
@@ -9486,8 +9537,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   menu(open)         the top bar's Menu (proxies for Rename / Add / Delete song, Undo / Redo, Load audio, Sync and the
  *                      More items: every entry clicks the real desktop control, so there is one code path)
  *
- * Phone mode moves three nodes into the transport's third row (#phoneTrade): the Trade split button (with its menu), the
- * practice text and the engine status; leaving phone mode puts them back exactly where they were. A tap on a greyed
+ * Phone mode moves nodes: the Trade split button (with its menu) and the practice text into the transport's third row
+ * (#phoneTrade), the position text and the engine status into one readout line under the time (#phReadout); leaving
+ * phone mode puts them back exactly where they were.
+ *   select(on)         Select mode of the Phrases tab (a tap on a phrase extends the selection like Shift-click; long press on
+ *                      a row turns it on); selUpdate(v) refreshes the selection bar from the page's model
+ *   measure()          full-screen sizing (--app-h, --panel-h) on resize / orientationchange / pageshow / visualViewport A tap on a greyed
  * control shows its explanation (its title) on the status line, since a touch screen has no hover tooltips.
  */
 (() => {
@@ -9497,7 +9552,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const U = SLP.ui, $ = U.$, h = U.h;
   const MQ = '(max-width: 699px), (pointer: coarse) and (max-height: 520px)';
   const TABS = ['loops', 'phrases', 'practice', 'edit'];
-  const MOVE = ['#tradeWrap', '#practiceText', '#engine'];
+  const MOVE = ['#tradeWrap', '#practiceText'];
   let api = null, mq = null, on = false;
   const moved = [];
 
@@ -9505,11 +9560,15 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (phone && !moved.length) {
       const slot = $('#phoneTrade');
       for (const sel of MOVE) { const n = $(sel); moved.push([n, n.parentNode, n.nextSibling]); slot.append(n); }
+      // the position text and the engine status share one readout line under the time
+      const ro = h('span', { id: 'phReadout' }), pos = $('#posOut'), eng = $('#engine'), tr = $('.bar.transport');
+      moved.push([ro, null, null], [pos, pos.parentNode, pos.nextSibling], [eng, eng.parentNode, eng.nextSibling]);
+      tr.insertBefore(ro, pos); ro.append(pos, eng);
       // the Sub-loop card is the first block of the Practice tab
       const sl = $('#subloop'), pr = $('section.practice');
       moved.push([sl, sl.parentNode, sl.nextSibling]); pr.prepend(sl);
     } else if (!phone) {
-      while (moved.length) { const [n, parent, next] = moved.pop(); parent.insertBefore(n, next); }
+      while (moved.length) { const [n, parent, next] = moved.pop(); if (parent) parent.insertBefore(n, next); else n.remove(); }
     }
   }
   function apply() {
@@ -9517,7 +9576,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     on = !!(mq && mq.matches);
     place(on);
     document.documentElement.classList.toggle('is-phone', on);
-    if (!on) menu(false);
+    if (!on) { menu(false); moreMenu(false); select(false); }
+    measure();
     if (was !== on && api) { api.refresh(); if (api.onChange) api.onChange(on); }
   }
 
@@ -9530,6 +9590,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       b.tabIndex = sel ? 0 : -1;
     }
     U.prefs.set('phoneTab', name);
+    if (name !== 'phrases') { select(false); moreMenu(false); }
     if (api) api.refresh(); // the inspector pictures and the practice row measure their boxes once visible
   }
 
@@ -9598,6 +9659,117 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     b.setAttribute('aria-expanded', String(!!open));
   }
 
+
+  // ---------- full screen ----------
+  // An installed iPhone app (standalone, black-translucent status bar) can report a layout viewport that is shorter than the
+  // screen by the status bar (the app was 59 px short and left an empty band under the tab bar). When it is, the app is sized
+  // to the screen. Elsewhere (Safari tab, desktop emulation) nothing is set and `position: fixed; inset: 0` does the job.
+  function measure() {
+    const root = document.documentElement;
+    if (!on) { root.style.removeProperty('--app-h'); root.style.removeProperty('--panel-h'); return; }
+    const standalone = navigator.standalone === true || (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches);
+    const vv = window.visualViewport;
+    const iw = window.innerWidth, ih = window.innerHeight;
+    let H = Math.max(ih, vv ? Math.round(vv.height + vv.offsetTop) : 0);
+    if (standalone && window.screen) {
+      const sh = ih >= iw ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+      if (sh > H && sh - H <= 160) H = sh;
+    }
+    if (H > ih + 0.5) root.style.setProperty('--app-h', H + 'px'); else root.style.removeProperty('--app-h');
+    // the tab's panel: 5 phrase rows when the screen allows it, 4 or 3 on a smaller phone (the waveform takes the rest)
+    const app = $('#app'), cs = getComputedStyle(app);
+    const avail = H - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    const panel = avail >= 735 ? 316 : avail >= 690 ? 272 : 228;
+    root.style.setProperty('--panel-h', panel + 'px');
+  }
+
+  // ---------- Select mode (Phrases tab) ----------
+  // On: a tap on a phrase row or a phrase block in the lane goes through phraseClick as a Shift-click would (a range from the
+  // anchor to the tapped phrase; the first tap with nothing selected selects just that phrase). Cmd-click has no meaning on
+  // the desktop, so there is nothing else to mirror. Done / switching off leaves the selection active for playback.
+  let selecting = false;
+  function select(v) {
+    v = !!v && on;
+    if (v === selecting) return;
+    selecting = v;
+    $('#app').classList.toggle('selecting', v);
+    const b = $('#phSelect');
+    b.setAttribute('aria-pressed', String(v));
+    if (!v) $('#selBar').hidden = true;
+    if (api) api.refresh();
+    if (v) selUpdate(SLP.app && SLP.app.model ? SLP.app.model() : null);
+  }
+  function selUpdate(v) {
+    const bar = $('#selBar');
+    if (!selecting || !v) { if (bar) bar.hidden = true; return; }
+    const phrases = v.phrases || v.loop.phrases, ids = v.selected, picked = phrases.filter((p) => ids.has(p.id));
+    bar.hidden = false;
+    let t = 'Tap phrases to select';
+    if (picked.length) {
+      const a = picked[0], b = picked[picked.length - 1];
+      const where = v.grid ? SLP.beats.gridHelpers.barLabel(v.grid, a.a, b.b) : U.fmt(a.a).replace(/^0:/, '') + '–' + U.fmt(b.b).replace(/^0:/, '');
+      t = picked.length + (picked.length === 1 ? ' phrase' : ' phrases') + ' selected · ' + where;
+    }
+    const el = $('#selText');
+    if (el.textContent !== t) el.textContent = t;
+    $('#selClear').disabled = !picked.length;
+  }
+  // long press on a row (≈450 ms, cancelled by moving more than 8 px, lifting or a scroll) turns Select on and selects it
+  function pressInit() {
+    const ol = $('#phraseList');
+    let timer = 0, start = null, fired = 0;
+    const stop = () => { clearTimeout(timer); timer = 0; start = null; };
+    ol.addEventListener('pointerdown', (e) => {
+      if (!on || e.pointerType === 'mouse' || e.button > 0 || e.target.closest('button, input')) return;
+      const li = e.target.closest('li.row');
+      if (!li || !li.dataset.id) return;
+      start = { x: e.clientX, y: e.clientY };
+      const id = li.dataset.id;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = 0; start = null; fired = performance.now();
+        if (navigator.vibrate) { try { navigator.vibrate(8); } catch (err) { /* no haptics */ } }
+        select(true);
+        SLP.app.phraseClick(id, {});
+      }, 450);
+    });
+    ol.addEventListener('pointermove', (e) => { if (timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) stop(); });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave', 'scroll']) ol.addEventListener(t, stop, true);
+    // the click that follows the lifted finger of a long press must not select again
+    ol.addEventListener('click', (e) => { if (fired && performance.now() - fired < 900) { e.stopPropagation(); e.preventDefault(); fired = 0; } }, true);
+    ol.addEventListener('contextmenu', (e) => { if (on) e.preventDefault(); });
+  }
+
+  // ---------- More menu of the Phrases actions ----------
+  const MORE = [
+    { id: 'pmDetect', label: 'Re-detect phrases', icon: 'detect', real: '#detectBtn' },
+    { id: 'pmReplace', label: 'Replace all phrases', icon: 'replace', real: '#detectAll', armed: 'Tap again: replaces every phrase' },
+  ];
+  function buildMore() {
+    const m = $('#phMoreMenu');
+    for (const it of MORE) {
+      const b = h('button', { type: 'button', role: 'menuitem', id: it.id });
+      b.innerHTML = U.ic(it.icon);
+      b.append(h('span', { class: 'pm-lbl', text: it.label }));
+      if (it.armed) U.armed(b, it.armed, () => { moreMenu(false); const r = $(it.real); r.click(); r.click(); });
+      else b.addEventListener('click', () => { moreMenu(false); $(it.real).click(); });
+      m.append(b);
+    }
+  }
+  function moreMenu(open) {
+    const m = $('#phMoreMenu'), b = $('#phMore');
+    if (!m) return;
+    if (open) {
+      for (const it of MORE) $('#' + it.id).disabled = !!$(it.real).disabled;
+      $('#pmDetect .pm-lbl').textContent = /^Detect/.test($('#detectBtn').textContent.trim()) ? 'Detect phrases' : 'Re-detect phrases';
+      const r = b.getBoundingClientRect();
+      m.style.right = Math.max(8, innerWidth - r.right) + 'px';
+      m.style.bottom = (innerHeight - r.top + 6) + 'px';
+    }
+    m.hidden = !open;
+    b.setAttribute('aria-expanded', String(!!open));
+  }
+
   // A tap on a greyed control (or its label group) shows why on the status line: touch has no hover tooltips.
   let lastTip = 0;
   function greyTap(e) {
@@ -9635,6 +9807,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       tab(next);
       $('#phoneTabs [data-ptab="' + next + '"]').focus();
     });
+    buildMore();
+    pressInit();
+    $('#phSelect').addEventListener('click', () => select(!selecting));
+    $('#selDone').addEventListener('click', () => select(false));
+    $('#selClear').addEventListener('click', () => { SLP.app.wholeLoop(); if (api) api.refresh(); });
+    $('#phMore').addEventListener('click', (e) => { e.stopPropagation(); moreMenu($('#phMoreMenu').hidden); });
+    document.addEventListener('pointerdown', (e) => {
+      const m = $('#phMoreMenu');
+      if (!m.hidden && !m.contains(e.target) && !$('#phMore').contains(e.target)) moreMenu(false);
+    });
+    for (const t of ['resize', 'orientationchange', 'pageshow']) window.addEventListener(t, measure);
+    if (window.visualViewport) visualViewport.addEventListener('resize', measure);
     document.addEventListener('touchend', greyTap, true);
     document.addEventListener('pointerup', greyTap, true);
     tab(U.prefs.get('phoneTab') || 'loops');
@@ -9642,7 +9826,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     apply();
   }
 
-  SLP.phone = { init, tab, menu, MQ, get on() { return on; } };
+  SLP.phone = { init, tab, menu, select, selUpdate, measure, MQ, get on() { return on; }, get selecting() { return selecting; } };
 })();
 // ---- app/pwa.js ----
 /* SLP.pwa — web-app plumbing (2026-11): service worker + update chip (hosted build only), persistent storage, and the
@@ -10174,7 +10358,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (!insideLoop(L.phrases[k])) { U.status('Phrase ' + (k + 1) + ' lies outside the loop (A/B moved). Widen the loop or re-detect.'); return; }
     followTab('phrase');
     const ix = selectedIndices();
-    if (ev && ev.shiftKey && ix) {
+    // Shift-click extends the selection from the anchor; on a phone the Select mode (Phrases tab) acts as that modifier
+    const extend = (ev && ev.shiftKey) || !!(SLP.phone && SLP.phone.selecting);
+    if (extend && ix) {
       let a = L.phrases.findIndex((p) => p.id === app.anchorId);
       if (a < 0) a = ix[0];
       app.focusId = id;
