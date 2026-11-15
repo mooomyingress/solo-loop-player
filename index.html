@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Fwl7aJ579i2OseF2dNfPxodkLoj8cNTPjYPLq0vbYzY='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AyXcS4cR74VNOyMoYD8ovhv2X7rlXQGc8NUSKAeWVuk='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -248,6 +248,7 @@ label.lbl .ic { margin: 0; }
 .keys-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-weight: 600; }
 .keys dl { display: grid; grid-template-columns: max-content 1fr max-content 1fr; gap: 3px 10px; margin: 0; }
 .keys dt { text-align: right; }
+.keys dt.kh { grid-column: 1 / -1; text-align: left; margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--line); font-weight: 600; color: var(--ink); }
 .keys dd { margin: 0; color: var(--muted); }
 /* sync: status chip in the top bar + settings panel (anchored under the chip) */
 .sync-chip { max-width: 230px; color: var(--muted); gap: 5px; }
@@ -626,6 +627,57 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   #takeSeg .lw { display: none; }
   #gridSome .gap-l { margin-left: 3px; }
 }
+/* Ear tab (DRILLS-SPEC.md, drill A "Degree over the chord"): the question card first (prompt, Start / End, the answer
+   buttons in pitch order, Repeat / Chord again / Hear it / Next), then the settings rows (Context, Note, Sing first; Chords;
+   Answers), the sound row (Piano / Organ, Register) and the collapsible Last questions list. Words on every control. */
+.tabs button[data-tab="ear"][aria-selected="true"] .ic { color: var(--accent); }
+.insp.ear { gap: 7px; }
+.ear-on { display: grid; gap: 7px; align-content: start; min-width: 0; }
+.ear-on > .ear-q { order: -1; }
+.ear-off { display: grid; gap: 8px; justify-items: start; }
+.ef { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; row-gap: 5px; min-width: 0; }
+.ef > .lbl:first-child { width: 58px; flex: none; text-align: right; }
+.ef .ef-gap { margin-left: 8px; }
+.ef .seg > button { padding: 0 8px; }
+.ear-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; flex: 1 1 0; }
+.ear-chip { height: 24px; padding: 0 10px; border-radius: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ear-chip[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+.ear-q { border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; display: grid; gap: 7px; background: var(--field); min-width: 0;
+  position: sticky; top: 0; z-index: 2; } /* short windows: the settings scroll under the question card, which stays in view */
+.ear-qh { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chip.ear-t { flex: none; color: var(--ink); font-weight: 600; border-color: var(--accent); background: var(--accent-soft); }
+.chip.ear-t .ic { width: 13px; height: 13px; color: var(--accent); margin: 0; }
+.ear-prompt { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.ear-prompt.revealed { color: var(--ink); font-weight: 600; }
+#earStart { min-width: 64px; justify-content: center; }
+.ear-ans { display: flex; gap: 5px; flex-wrap: wrap; min-width: 0; }
+.ear-a { height: 40px; min-width: 44px; flex: 1 1 0; max-width: 76px; flex-direction: column; justify-content: center; gap: 3px; padding: 0 4px; }
+.ear-a .ea-l { font-size: 15px; font-weight: 600; line-height: 1; }
+.ear-a .ea-k { font: 10px/1 var(--font-mono); color: var(--faint); }
+.ear-a.correct { background: var(--phrase); border-color: var(--phrase); color: var(--on-phrase); }
+.ear-a.correct .ea-k { color: inherit; opacity: 0.75; }
+.ear-a.wrong { box-shadow: inset 0 0 0 1px var(--head); border-color: var(--head); color: var(--head); }
+.ear-acts { display: flex; gap: 5px; flex-wrap: wrap; }
+.ear-acts kbd { margin-left: 5px; }
+#earLastBtn { gap: 5px; }
+#earLastBtn .car { width: 8px; height: 8px; fill: currentColor; opacity: 0.7; transition: transform 0.12s; }
+#earLastBtn[aria-expanded="true"] .car { transform: rotate(180deg); }
+.ear-last { list-style: none; margin: -2px 0 0; padding: 0 0 0 64px; display: grid; gap: 2px; font-size: 12px; }
+.ear-last li { display: flex; gap: 12px; white-space: nowrap; }
+.ear-last .el-q { color: var(--ink); font-variant-numeric: tabular-nums; min-width: 9em; }
+.ear-last .el-a { color: var(--faint); }
+.ear-last .el-a.diff { color: var(--warn); }
+.ear-last .ear-none { color: var(--muted); }
+@media (max-height: 820px) { html:not(.is-phone) .insp.ear, html:not(.is-phone) .ear-on { gap: 5px; } html:not(.is-phone) .ear-a { height: 34px; } }
+@container (max-width: 500px) {
+  .ef > .lbl:first-child { width: 52px; }
+  .ef .ef-gap { margin-left: 4px; }
+  .ear-acts kbd { display: none; }
+  .ear-qh { flex-wrap: wrap; row-gap: 5px; }
+  .ear-qh .ear-prompt { order: 3; flex: 1 1 100%; }
+  .ear-qh .chip.ear-t { flex: 1 1 auto; }
+  .ear-last { padding-left: 58px; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 /* ===================================================================================================================
    Phone layout (2026-11: iPhone, installed from GitHub Pages). Applies below 700 px wide, and on short touch screens
@@ -836,7 +888,37 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .app.selecting .phrases .row .n { box-sizing: border-box; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line-strong); display: grid; place-items: center; text-align: center; font-size: 12px; position: relative; }
   .app.selecting .phrases .row.sel .n { background: var(--phrase); border-color: var(--phrase); color: transparent; }
   .app.selecting .phrases .row.sel .n::after { content: ""; position: absolute; left: 7px; top: 3px; width: 6px; height: 11px; border: solid var(--on-phrase, #fff); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
-  .phone-tabs { grid-area: tabs; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding-top: 1px; }
+  .phone-tabs { grid-area: tabs; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding-top: 1px; }
+  /* Ear tab (fifth tab): the inspector panel showing only the Ear content (no Loop / Phrase / Grid tab row); the Edit tab
+     hides the Ear tab button. The question card is first; answer buttons ≥ 44 px wide and 52 px high, in one row of seven. */
+  .app[data-ptab="ear"] .panel.inspector { display: flex; }
+  .app[data-ptab="ear"] .panel.inspector > .panel-head { display: none; }
+  .app[data-ptab="edit"] .panel.inspector .tabs [data-tab="ear"] { display: none; }
+  .insp.ear { padding: 8px 8px 16px; gap: 10px; }
+  .ear-on { gap: 10px; }
+  .ef { gap: 8px; row-gap: 8px; }
+  .ef > .lbl:first-child, .ef .grp > .lbl { width: 70px; flex: none; text-align: left; margin-left: 0; font-size: 14px; }
+  .ef > .grp { flex: 1 1 100%; display: flex; gap: 8px; min-width: 0; }
+  .ef .ef-gap { margin-left: 0; }
+  .ef .seg { flex: 1 1 auto; min-width: 0; }
+  .ef .seg > button { flex: 1 1 0; justify-content: center; padding: 0 6px; font-size: 14px; }
+  #earSing { flex: 1 1 100%; justify-content: center; }
+  .ear-chip { height: 44px; min-width: 60px; padding: 0 14px; border-radius: 22px; font-size: 15px; justify-content: center; }
+  .ear-q { position: static; border: 0; padding: 0 0 10px; background: transparent; border-bottom: 1px solid var(--line); border-radius: 0; gap: 10px; }
+  .ear-qh { flex-wrap: wrap; row-gap: 6px; }
+  .ear-qh .ear-prompt { order: 3; flex: 1 1 100%; white-space: normal; font-size: 15px; min-height: 2.7em; }
+  .ear-qh .chip.ear-t { flex: 1 1 auto; height: 30px; font-size: 14px; }
+  #earStart { min-width: 96px; }
+  .ear-ans { gap: 4px; }
+  .ear-a { height: 52px; min-width: 44px; max-width: none; border-radius: 10px; }
+  .ear-a .ea-l { font-size: 18px; }
+  .ear-a .ea-k { display: none; }
+  .ear-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  .ear-acts button { justify-content: center; padding: 0 2px; font-size: 14px; }
+  #earReg { flex: 1 1 auto; min-width: 0; }
+  .ef .spacer { display: none; }
+  #earLastBtn { flex: 1 1 100%; justify-content: center; }
+  .ear-last { padding: 0 4px; font-size: 14px; gap: 6px; }
   .phone-tabs button { height: 46px; flex-direction: column; justify-content: center; gap: 2px; padding: 0 2px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; border-radius: 10px; }
   .phone-tabs button .ic { width: 20px; height: 20px; margin: 0; }
   .phone-tabs button[aria-selected="true"] { color: var(--accent); background: var(--accent-soft); font-weight: 650; }
@@ -974,7 +1056,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   }
   .lanes { grid-template-rows: 48px 26px 22px minmax(60px, 1fr) 42px; }
   .app { grid-template-rows: auto auto auto minmax(0, 1fr) auto; }
-  .phone-tabs button { height: 44px; flex-direction: row; gap: 6px; }
+  .phone-tabs button { height: 44px; flex-direction: row; gap: 4px; }
   .phone-tabs button .ic { width: 17px; height: 17px; }
 }
 </style>
@@ -1024,6 +1106,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
 <symbol id="i-cloud-sync" viewBox="0 0 16 16"><path d="M4.6 12.8h6.8a2.9 2.9 0 0 0 .4-5.8 3.9 3.9 0 0 0-7.6-.7 3.3 3.3 0 0 0 .4 6.5z"/><path d="M6 10.2a2 2 0 0 1 3.5-1.5"/><path d="M9.8 7.6v1.3H8.5"/></symbol>
 <symbol id="i-cloud-err" viewBox="0 0 16 16"><path d="M4.6 12.8h6.8a2.9 2.9 0 0 0 .4-5.8 3.9 3.9 0 0 0-7.6-.7 3.3 3.3 0 0 0 .4 6.5z"/><path d="M8 7.4v2.2"/><path d="M8 11.3h.01"/></symbol>
 <symbol id="i-sync" viewBox="0 0 16 16"><path d="M2.8 7.5a5 5 0 0 1 8.7-3.2"/><path d="M12 1.8v2.8H9.2"/><path d="M13.2 8.5a5 5 0 0 1-8.7 3.2"/><path d="M4 14.2v-2.8h2.8"/></symbol>
+<symbol id="i-ear" viewBox="0 0 16 16"><path d="M4.2 6.2a3.8 3.8 0 0 1 7.6 0c0 2.1-2 2.7-2.2 4.6-.2 1.8-1.3 2.9-2.8 2.9a2.4 2.4 0 0 1-2.2-1.5"/><path d="M6.4 6.4a1.6 1.6 0 0 1 3.2 0c0 1-.9 1.3-1 2.2"/></symbol>
 <symbol id="i-volume" viewBox="0 0 16 16"><path d="M2.5 6.2h2.4L8.2 3.4v9.2L4.9 9.8H2.5z"/><path d="M10.8 5.6a3.4 3.4 0 0 1 0 4.8"/></symbol>
 </defs></svg>
 <div class="app" id="app">
@@ -1082,6 +1165,8 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
         <hr>
         <button type="button" role="menuitem" id="miCopy">Copy loop list</button>
         <button type="button" role="menuitem" id="miReset">Reset loops to the imported file</button>
+        <hr>
+        <button type="button" role="menuitem" id="miEarClear" title="Forget the ear drill answers kept on this device (two clicks; they only steer which questions come back)">Clear ear history</button>
         <hr>
         <button type="button" role="menuitem" id="miSync"><svg class="ic" aria-hidden="true"><use href="#i-sync"/></svg>Sync between devices…</button>
         <hr>
@@ -1269,6 +1354,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
           <button type="button" role="tab" data-tab="loop" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-loop"/></svg>Loop</button>
           <button type="button" role="tab" data-tab="phrase" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-phrase"/></svg>Phrase</button>
           <button type="button" role="tab" data-tab="grid" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Grid</button>
+          <button type="button" role="tab" data-tab="ear" aria-selected="false" title="Ear drills: name a note's degree over the song's chords"><svg class="ic" aria-hidden="true"><use href="#i-ear"/></svg>Ear</button>
         </div>
         <span class="spacer"></span><span class="meta mono" id="inspMeta"></span>
       </div>
@@ -1351,6 +1437,52 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
           </div>
         </div>
       </div>
+      <div class="insp ear" id="tabEar" role="tabpanel" aria-label="Ear drills" hidden>
+        <div class="ear-off" id="earOff" hidden>
+          <p class="hint">Needs a bar grid and a chord chart (Grid tab).</p>
+          <div><button type="button" id="earToGrid"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Open the Grid tab</button></div>
+        </div>
+        <div class="ear-on" id="earOn">
+          <div class="ef"><span class="lbl" id="earCtxLbl">Context</span>
+            <span class="seg" id="earCtx" role="radiogroup" aria-labelledby="earCtxLbl" title="What sounds under the note: a synthesised bar of the chord at the grid's tempo">
+              <button type="button" role="radio" aria-checked="false" data-v="comp" title="Comp: bass root on 1 and 3, the 3rd and 7th on 2 and 4, slightly swung">Comp</button><button type="button" role="radio" aria-checked="false" data-v="drone" title="Drone: the root and the 3rd and 7th held">Drone</button>
+            </span>
+            <span class="grp ef-gap"><span class="lbl" id="earNoteLbl">Note</span>
+            <span class="seg" id="earNote" role="radiogroup" aria-labelledby="earNoteLbl" title="When the note sounds">
+              <button type="button" role="radio" aria-checked="false" data-v="beat3" title="On beat 3: the chord keeps playing under the note">On beat 3</button><button type="button" role="radio" aria-checked="false" data-v="after" title="After the bar: the bar stops, the note alone over the chord held quietly">After the bar</button>
+            </span></span>
+            <button type="button" id="earSing" class="ef-gap" aria-pressed="true" title="Sing first: after the note, a silent count of 2 beats (the click on the even beats when Click is on) to sing down to the root before the answers open">Sing first</button>
+          </div>
+          <div class="ef"><span class="lbl">Chords</span><span class="ear-chips" id="earChords" role="group" aria-label="Chords drilled"></span></div>
+          <div class="ef"><span class="lbl" id="earSetLbl">Answers</span>
+            <span class="seg" id="earSet" role="radiogroup" aria-labelledby="earSetLbl" title="Which degrees can be asked (and answered)">
+              <button type="button" role="radio" aria-checked="false" data-v="chordTones" title="Chord tones: the chord's own tones (dominant 1 3 5 b7)">Chord tones</button><button type="button" role="radio" aria-checked="false" data-v="colour" title="Colour: chord tones + 9 and 13 (6 on major), + #9/b3 on a dominant (the blues note)">Colour</button><button type="button" role="radio" aria-checked="false" data-v="all" title="All 12 degrees">All</button><button type="button" role="radio" aria-checked="false" data-v="custom" title="Custom: choose the degrees">Custom</button>
+            </span>
+          </div>
+          <div class="ef" id="earCustomRow" hidden><span class="lbl"></span><span class="ear-chips" id="earCustom" role="group" aria-label="Custom answer set"></span></div>
+          <div class="ear-q">
+            <div class="ear-qh"><span class="chip lead ear-t"><svg class="ic" aria-hidden="true"><use href="#i-ear"/></svg>Degree over the chord</span>
+              <span class="ear-prompt" id="earPrompt" role="status" aria-live="polite"></span>
+              <button type="button" id="earStart" class="primary">Start</button></div>
+            <div class="ear-ans" id="earAns" role="group" aria-label="Answer: the note's degree over the chord"></div>
+            <div class="ear-acts">
+              <button type="button" id="earRepeat" title="The question again: the bar and the note (R)">Repeat<kbd>R</kbd></button>
+              <button type="button" id="earContext" title="The bar of the chord again, without the note (Space)">Chord again<kbd>Space</kbd></button>
+              <button type="button" id="earHear" title="Hear it: the root, then the note, then both (H)">Hear it<kbd>H</kbd></button>
+              <button type="button" id="earNext" title="Next question (Enter)">Next<kbd>Enter</kbd></button>
+            </div>
+          </div>
+          <div class="ef"><span class="lbl" id="earToneLbl">Sound</span>
+            <span class="seg" id="earTone" role="radiogroup" aria-labelledby="earToneLbl" title="The note's sound (this device)">
+              <button type="button" role="radio" aria-checked="false" data-v="piano" title="Piano: a soft piano-like tone that fades">Piano</button><button type="button" role="radio" aria-checked="false" data-v="organ" title="Organ: a sustained tone">Organ</button>
+            </span>
+            <span class="grp ef-gap"><label class="lbl" for="earReg">Register</label><select id="earReg" title="The range the question notes lie in (this device)"></select></span>
+            <span class="spacer"></span>
+            <button type="button" id="earLastBtn" class="quiet" aria-expanded="false" aria-controls="earLast" title="The last 10 answers on this device (chord · note · degree, and yours)">Last questions<svg class="car" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5h7L5 7.5z"/></svg></button>
+          </div>
+          <ol class="ear-last" id="earLast" hidden></ol>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1360,6 +1492,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
     <button type="button" role="tab" data-ptab="phrases" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-phrase"/></svg><span>Phrases</span></button>
     <button type="button" role="tab" data-ptab="practice" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-trade"/></svg><span>Practice</span></button>
     <button type="button" role="tab" data-ptab="edit" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-rename"/></svg><span>Edit</span></button>
+    <button type="button" role="tab" data-ptab="ear" aria-selected="false"><svg class="ic" aria-hidden="true"><use href="#i-ear"/></svg><span>Ear</span></button>
   </nav>
 </div>
 <button type="button" class="update-chip" id="updateChip" hidden title="A new version of Solo Loop Player is ready. Reload to use it (nothing is lost)">Update ready – reload</button>
@@ -4312,6 +4445,223 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     },
   };
 })();
+// ---- dsp/theory.js ----
+/* SLP.theory — chord symbols, scale degrees over a chord, guide tones, answer sets and the question generator of the
+ * ear drills (DRILLS-SPEC.md). Pure: no DOM, no audio, runs under jsc.
+ *
+ *   parseChord('Bb7')        → { root: 10, quality: 'dom', symbol: 'Bb7', tones, sus?, sixth?, sharps } | null
+ *                              quality: 'maj' (triad / 6) · 'maj7' · 'min' · 'hdim' · 'dim' · 'dom' (sus: dom with sus: true)
+ *   chordTones(chord)        → semitone offsets of the chord's own tones (dom [0, 4, 7, 10]; sus [0, 5, 7, 10])
+ *   degreeLabel(chord, st)   → '1' | 'b9' | '9' | '#9/b3' | '3' | … (the spec's table); shortLabel(label) drops the '/…'
+ *   guideTones(chord)        → { third, seventh }   (sus: 4 and b7; a major triad: 3 and 7; a 6 chord: 3 and 6)
+ *   guideToneLine(cells, { start: '3' | '7', low, high, bpb }) → [{ cell, part, chord, midi, degree }]
+ *   answerSet(chord, preset) → semitone offsets, pitch order. preset 'chordTones' | 'colour' | 'all' | [offsets] (custom)
+ *   distinctChords(cells, bpb) → chord symbols of a chart in order of first appearance (split cells through chordParts)
+ *   rng(seed)                → a seeded random function (mulberry32), for the question generator and its tests
+ *   nextQuestion(o)          → { question: { chord, root, semis, midi, label } | null, skipped: [unparseable symbols] }
+ *   KEY_DEGREES              the drill keys: digit → natural degree, Shift+digit → the flat one, Alt+4 → #11
+ *   pcName(pc, sharps) · noteName(midi, sharps)  'Bb' · 'Bb3'
+ */
+(() => {
+  'use strict';
+  const SLP = (typeof self !== 'undefined' ? self : globalThis).SLP ||= {};
+
+  const LETTER = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+  const SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const mod = (x, m) => ((x % m) + m) % m;
+  const pcName = (pc, sharps) => (sharps ? SHARPS : FLATS)[mod(pc, 12)];
+  const noteName = (midi, sharps) => pcName(midi, sharps) + (Math.floor(midi / 12) - 1);
+
+  // Chord grammar (DRILLS-SPEC.md): root [A-G][#b]?, then one of these quality spellings. Anything else → null.
+  //   tones: the chord's own tones (semitones above the root). A bare minor or a diminished chord is read as the four-note
+  //   chord jazz charts mean by it (m = m7, dim = dim7); a bare major chord stays a triad (its 7th is not implied).
+  const Q = {};
+  const def = (names, info) => { for (const n of names) Q[n] = info; };
+  def(['', 'maj'], { quality: 'maj', tones: [0, 4, 7] });
+  def(['6'], { quality: 'maj', tones: [0, 4, 7, 9], sixth: true });
+  def(['maj7', 'M7', 'Δ', 'Δ7'], { quality: 'maj7', tones: [0, 4, 7, 11] });
+  def(['m', '-', 'm7', '-7'], { quality: 'min', tones: [0, 3, 7, 10] });
+  def(['m6', '-6'], { quality: 'min', tones: [0, 3, 7, 9], sixth: true });
+  def(['m7b5', '-7b5', 'ø', 'ø7'], { quality: 'hdim', tones: [0, 3, 6, 10] });
+  def(['dim', '°', 'dim7', '°7'], { quality: 'dim', tones: [0, 3, 6, 9] });
+  def(['7', '9', '13', '7b9', '7#9', '7alt', '7#11'], { quality: 'dom', tones: [0, 4, 7, 10] });
+  def(['7sus4', '7sus', 'sus', 'sus4'], { quality: 'dom', tones: [0, 5, 7, 10], sus: true });
+
+  function parseChord(sym) {
+    if (sym && typeof sym === 'object' && typeof sym.root === 'number') return sym;
+    const s = String(sym == null ? '' : sym).trim().replace(/♭/g, 'b').replace(/♯/g, '#');
+    const m = /^([A-G])([#b]?)(.*)$/.exec(s);
+    if (!m) return null;
+    const info = Q[m[3]];
+    if (!info) return null;
+    const out = { root: mod(LETTER[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0), 12), quality: info.quality, symbol: s,
+      tones: info.tones.slice(), sharps: m[2] === '#' };
+    if (info.sus) out.sus = true;
+    if (info.sixth) out.sixth = true;
+    return out;
+  }
+  const chordOf = (c) => (c && typeof c === 'object' && typeof c.root === 'number' ? c : parseChord(c));
+  function chordTones(chord) { const c = chordOf(chord); return c ? c.tones.slice() : []; }
+
+  // Degree labels: semitones above the chord root (the spec's table).
+  const BASE = ['1', 'b9', '9', '#9/b3', '3', '11', '#11', '5', 'b13', '13', 'b7', '7'];
+  const TABLE = {
+    dom: BASE,
+    maj: BASE.map((l, i) => (i === 8 ? '#5' : i === 9 ? '6' : l)),
+    min: BASE.map((l, i) => (i === 3 ? 'b3' : i === 6 ? '#11/b5' : i === 8 ? 'b6/b13' : i === 9 ? '6/13' : l)),
+    hdim: BASE.map((l, i) => (i === 3 ? 'b3' : i === 6 ? 'b5' : l)),
+    dim: BASE.map((l, i) => (i === 3 ? 'b3' : i === 6 ? 'b5' : i === 9 ? 'bb7' : l)),
+  };
+  TABLE.maj7 = TABLE.maj;
+  function degreeLabel(chord, semis) {
+    const c = chordOf(chord);
+    const t = TABLE[c ? c.quality : 'dom'] || BASE;
+    return t[mod(Math.round(semis), 12)];
+  }
+  const shortLabel = (label) => String(label).split('/')[0];
+
+  function guideTones(chord) {
+    const c = chordOf(chord);
+    if (!c) return null;
+    if (c.sus) return { third: 5, seventh: 10 };
+    const third = c.quality === 'maj' || c.quality === 'maj7' || c.quality === 'dom' ? 4 : 3;
+    const seventh = c.quality === 'dom' || c.quality === 'min' || c.quality === 'hdim' ? (c.sixth ? 9 : 10)
+      : c.quality === 'dim' ? 9 : c.sixth ? 9 : 11;
+    return { third, seventh };
+  }
+
+  // Guide-tone line (drill B): starts on the first chord's 3rd (or 7th) inside [low, high] (the octave nearest the middle of
+  // the range; a tie takes the lower one); at every chord change it moves to whichever guide tone (3rd or 7th, any octave in
+  // the range) is nearest to the previous note, a tie preferring the 3rd; it holds while the chord stays the same. A part
+  // with no chord or one that cannot be read gets midi null and does not move the line.
+  //   cells: chart cells ('Bb7', 'Bb7 F7' = half a bar each, through gridHelpers.chordParts when present)
+  function partsOf(cell, bpb) {
+    const GH = SLP.beats && SLP.beats.gridHelpers;
+    if (GH && GH.chordParts) return GH.chordParts(cell, bpb);
+    const toks = String(cell || '').trim().split(/\s+/).filter(Boolean);
+    return toks.map((chord, k) => ({ chord, beat: Math.floor(k * bpb / toks.length) }));
+  }
+  function inRange(pc, low, high) { const out = []; for (let m = low; m <= high; m++) if (mod(m, 12) === pc) out.push(m); return out; }
+  function guideToneLine(cells, o) {
+    const opt = o || {}, low = opt.low == null ? 60 : opt.low, high = opt.high == null ? 72 : opt.high, bpb = opt.bpb || 4;
+    const startKey = opt.start === '7' ? 'seventh' : 'third';
+    const out = [];
+    let prev = null, prevSym = null;
+    (cells || []).forEach((cell, ci) => {
+      const parts = partsOf(cell, bpb);
+      if (!parts.length) { out.push({ cell: ci, part: 0, chord: '', midi: null, degree: null }); return; }
+      parts.forEach((p, pi) => {
+        const c = parseChord(p.chord);
+        if (!c) { out.push({ cell: ci, part: pi, chord: p.chord, midi: null, degree: null }); return; }
+        const key = c.root + ':' + c.quality + ':' + (c.sus ? 's' : '') + (c.sixth ? '6' : '');
+        const gt = guideTones(c);
+        let midi;
+        if (prev != null && key === prevSym) midi = prev;
+        else if (prev == null) {
+          const pc = mod(c.root + gt[startKey], 12), mid = (low + high) / 2;
+          let cands = inRange(pc, low, high);
+          if (!cands.length) cands = inRange(pc, low - 11, high + 11);
+          midi = cands.reduce((best, m) => (Math.abs(m - mid) < Math.abs(best - mid) ? m : best), cands[0]);
+        } else {
+          let best = null;
+          const both = [['third', gt.third], ['seventh', gt.seventh]];
+          const wide = !both.some(([, st]) => inRange(mod(c.root + st, 12), low, high).length); // a range too narrow for either
+          for (const [which, st] of both) {
+            const cands = wide ? inRange(mod(c.root + st, 12), low - 11, high + 11) : inRange(mod(c.root + st, 12), low, high);
+            for (const m of cands) {
+              const d = Math.abs(m - prev);
+              if (!best || d < best.d || (d === best.d && which === 'third' && best.which !== 'third')) best = { m, d, which };
+            }
+          }
+          midi = best.m;
+        }
+        prev = midi; prevSym = key;
+        out.push({ cell: ci, part: pi, chord: c.symbol, midi, degree: degreeLabel(c, mod(midi - c.root, 12)) });
+      });
+    });
+    return out;
+  }
+
+  // Answer sets: chordTones (the chord's own tones) · colour (+ 9 + 13 / 6, + #9/b3 on a dominant: the blues note; the
+  // default) · all (12) · custom (an array of offsets, used for every chord). Pitch order.
+  const PRESETS = ['chordTones', 'colour', 'all'];
+  function answerSet(chord, preset) {
+    const c = chordOf(chord);
+    let set;
+    if (Array.isArray(preset)) set = preset.map((x) => mod(Math.round(Number(x)), 12)).filter((x) => isFinite(x));
+    else if (preset === 'all') set = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    else {
+      set = c ? c.tones.slice() : [];
+      if (preset !== 'chordTones' && c) { set.push(2, 9); if (c.quality === 'dom' && !c.sus) set.push(3); }
+    }
+    return [...new Set(set)].sort((x, y) => x - y);
+  }
+
+  function distinctChords(cells, bpb) {
+    const seen = new Set(), out = [];
+    for (const cell of cells || []) for (const p of partsOf(cell, bpb || 4)) if (p.chord && !seen.has(p.chord)) { seen.add(p.chord); out.push(p.chord); }
+    return out;
+  }
+
+  // mulberry32: small, fast, good enough for drills; the same seed gives the same questions (tests)
+  function rng(seed) {
+    let a = (seed >>> 0) || 0x9e3779b9;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Weight of a candidate from the local history (most recent last): a miss on this chord and degree adds 3, a miss on the
+  // same degree over another chord 1, both fading by 0.93 per answer since; only the last 60 answers count. Invisible to the
+  // owner (no numbers are shown): degrees missed recently simply come back more often.
+  function weightOf(history, chord, semis) {
+    let w = 1;
+    const h = history || [];
+    for (let i = h.length - 1, age = 0; i >= 0 && age < 60; i--, age++) {
+      const e = h[i];
+      if (!e || e.semis !== semis || e.answered === e.semis) continue;
+      w += (e.chord === chord ? 3 : 1) * Math.pow(0.93, age);
+    }
+    return w;
+  }
+  // o: { chords: [symbols], set: preset | [offsets], history: [{ chord, semis, answered }], last: { chord, semis } | null,
+  //      rng: () => [0, 1), low, high (MIDI register of the question note) }
+  // Never the same chord and degree twice in a row (unless it is the only candidate). Unreadable chords are skipped and
+  // reported. The note is a random octave of that pitch class inside [low, high] (the nearest one to the range when the
+  // range holds none).
+  function nextQuestion(o) {
+    const opt = o || {}, R = opt.rng || Math.random, low = opt.low == null ? 60 : opt.low, high = opt.high == null ? 72 : opt.high;
+    const skipped = [], cands = [];
+    for (const sym of [...new Set(opt.chords || [])]) {
+      const c = parseChord(sym);
+      if (!c) { skipped.push(sym); continue; }
+      for (const s of answerSet(c, opt.set == null ? 'colour' : opt.set)) cands.push({ c, semis: s });
+    }
+    if (!cands.length) return { question: null, skipped };
+    let pool = cands.filter((q) => !(opt.last && q.c.symbol === opt.last.chord && q.semis === opt.last.semis));
+    if (!pool.length) pool = cands;
+    const ws = pool.map((q) => weightOf(opt.history, q.c.symbol, q.semis));
+    let x = R() * ws.reduce((a, b) => a + b, 0), k = 0;
+    while (k < pool.length - 1 && x >= ws[k]) { x -= ws[k]; k++; }
+    const q = pool[k], pc = mod(q.c.root + q.semis, 12);
+    let notes = inRange(pc, low, high);
+    if (!notes.length) { const all = inRange(pc, low - 11, high + 11); notes = [all.reduce((b, m) => (Math.min(Math.abs(m - low), Math.abs(m - high)) < Math.min(Math.abs(b - low), Math.abs(b - high)) ? m : b), all[0])]; }
+    const midi = notes[Math.min(notes.length - 1, Math.floor(R() * notes.length))];
+    return { question: { chord: q.c.symbol, root: q.c.root, semis: q.semis, midi, label: degreeLabel(q.c, q.semis), sharps: q.c.sharps }, skipped };
+  }
+
+  // Drill keys (DRILLS-SPEC.md): 1–7 natural degrees (2 = 9, 4 = 11, 6 = 13 / 6, 7 = maj 7), Shift+digit the flat one
+  // (b9, #9/b3, b5/#11, b13, b7), Alt+4 #11.
+  const KEY_DEGREES = { plain: { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 }, shift: { 2: 1, 3: 3, 5: 6, 6: 8, 7: 10 }, alt: { 4: 6 } };
+
+  SLP.theory = { parseChord, chordTones, degreeLabel, shortLabel, guideTones, guideToneLine, answerSet, distinctChords, rng, nextQuestion,
+    weightOf, PRESETS, KEY_DEGREES, pcName, noteName };
+})();
 // ---- app/anytune.js ----
 /* SLP.anytune — Anytune Pro+ `.atcfg` import/export (lifted from v1, behaviour-identical).
  *
@@ -4625,6 +4975,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *                setActivePhrases([firstId, lastId] | null)
  *                Phrase lists stay ordered and non-overlapping; an edited edge sets manual: true.
  * Practice/grid  setPractice(patch) · setGrid(grid | null)
+ * Ear drills     setDrills(patch, {label}) → changed? · song.drills (normDrills / defaultDrills; synced with the practice section)
  *                practice.gap: seconds | 'phrase' | 'click' | '1bar' | '2bar'; practice.leadIn / leadOut: beats
  *                when the song has a grid, seconds otherwise (the UI converts both to seconds for SLP.engine).
  *                practice.fit: 'off' | 'bar' | 'beat'; click: 'off' | 'all' | 'backbeat' | 'downbeat';
@@ -4763,6 +5114,31 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       tradeDefault: TRADE_PRESETS.some((t) => t.id === p.tradeDefault) ? p.tradeDefault : 'backbeat',
       tradeRestore: normTradeRestore(p.tradeRestore) };
   }
+  // Ear drills (DRILLS-SPEC.md): per-song settings, synced with the song's practice section (same stamp, same unit in the
+  // sync document: practice.v.drills) and undoable like the practice options. answerSet: 'chordTones' | 'colour' | 'all' | an
+  // array of semitone offsets (custom); chords: null = every chord of the chart, else the chosen symbols; context: 'comp' |
+  // 'drone' ('song' is phase 2: kept, played as Comp until then); noteOn: 'beat3' | 'after'. guide / level: phases 2–3.
+  function defaultDrills() {
+    return { answerSet: 'colour', chords: null, context: 'comp', noteOn: 'beat3', singFirst: true,
+      guide: { start: '3', mode: 'with', rhythm: 'half' }, level: -6 };
+  }
+  function normDrills(d) {
+    const o = defaultDrills();
+    if (!d || typeof d !== 'object') return o;
+    if (['chordTones', 'colour', 'all'].includes(d.answerSet)) o.answerSet = d.answerSet;
+    else if (Array.isArray(d.answerSet)) {
+      const set = [...new Set(d.answerSet.filter((x) => typeof x === 'number' && isFinite(x)).map((x) => ((Math.round(x) % 12) + 12) % 12))].sort((x, y) => x - y);
+      if (set.length) o.answerSet = set;
+    }
+    if (Array.isArray(d.chords)) o.chords = [...new Set(d.chords.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 24)))].slice(0, 48);
+    if (['comp', 'drone', 'song'].includes(d.context)) o.context = d.context;
+    if (d.noteOn === 'after') o.noteOn = 'after';
+    o.singFirst = d.singFirst !== false;
+    const g = d.guide && typeof d.guide === 'object' ? d.guide : {};
+    o.guide = { start: g.start === '7' ? '7' : '3', mode: ['with', 'mine', 'alt'].includes(g.mode) ? g.mode : 'with', rhythm: g.rhythm === 'beat3' ? 'beat3' : 'half' };
+    o.level = Math.min(0, Math.max(-40, num(d.level, -6)));
+    return o;
+  }
   function normTradeRestore(r) {
     if (!r || typeof r !== 'object') return null;
     const n = normPractice({ gap: r.gap, click: r.click, clickWhen: r.clickWhen === 'always' ? 'always' : 'turn', countIn: r.countIn });
@@ -4863,7 +5239,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       audioName: String(s.audioName || ''), duration, sourceDuration: Math.min(MAX_T, Math.max(0, num(s.sourceDuration, 0))),
       template: s.template && typeof s.template === 'object' ? s.template : null,
       rate: Math.min(1.1, Math.max(0.4, num(s.rate, 1))), loopOn: s.loopOn !== false,
-      activeLoopId, activePhraseIds: ap, practice: normPractice(s.practice), grid: normGrid(s.grid), loops,
+      activeLoopId, activePhraseIds: ap, practice: normPractice(s.practice), drills: normDrills(s.drills), grid: normGrid(s.grid), loops,
       // sync (2026-11): identity, per-section stamps + loop tombstones, the other device's audio file name (hint only)
       uuid: typeof s.uuid === 'string' && s.uuid ? s.uuid.slice(0, 80) : null, sync: normSyncMeta(s.sync), audioHint: normHint(s.audioHint),
     };
@@ -5104,7 +5480,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const loopValue = (l) => ({ name: l.name, a: l.a, b: l.b, pos: l.pos, uuid: l.uuid || null, sens: l.phraseSensitivity,
     phrases: l.phrases.map((p) => ({ id: p.id, a: p.a, b: p.b, star: !!p.star, name: p.name || '', manual: !!p.manual, shift: p.shift || 0 })) });
   function secFp(s, k) {
-    return k === 'meta' ? canon([s.title, s.artist, s.sourceDuration]) : k === 'speed' ? String(s.rate) : canon(k === 'practice' ? s.practice : s.grid);
+    // the practice section also carries the ear drill settings (song.drills, DRILLS-SPEC.md)
+    return k === 'meta' ? canon([s.title, s.artist, s.sourceDuration]) : k === 'speed' ? String(s.rate) : k === 'practice' ? canon([s.practice, s.drills || null]) : canon(s.grid);
   }
   const loopFp = (l) => canon(loopValue(l));
   const loopSig = (v) => canon(Object.assign({}, v, { phrases: (v.phrases || []).map((p) => Object.assign({}, p, { id: undefined })) }));
@@ -5115,7 +5492,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (!d.song) seedRef = false;
       else {
         const s = seedSong();
-        seedRef = { sec: { meta: canon(metaValue(s)), speed: String(s.rate), practice: canon(s.practice), grid: canon(s.grid) },
+        seedRef = { sec: { meta: canon(metaValue(s)), speed: String(s.rate), practice: secFp(s, 'practice'), grid: canon(s.grid) },
           loops: new Map(s.loops.map((l) => [l.sid, loopSig(loopValue(l))])), uuids: new Set(s.loops.map((l) => l.uuid).filter(Boolean)), title: s.title };
       }
     }
@@ -5200,7 +5577,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return { app: 'solo-loop-player', format: 1, uuid: s.uuid,
       audio: { name: s.audioName || h.name || '', duration: s.duration || h.duration || 0 },
       meta: { t: s.sync.meta, v: clone(metaValue(s)) }, speed: { t: s.sync.speed, v: s.rate },
-      practice: { t: s.sync.practice, v: clone(s.practice) }, grid: { t: s.sync.grid, v: s.grid ? clone(s.grid) : null },
+      practice: { t: s.sync.practice, v: Object.assign(clone(s.practice), { drills: clone(s.drills || normDrills(null)) }) }, grid: { t: s.sync.grid, v: s.grid ? clone(s.grid) : null },
       loops: s.loops.map((l) => ({ sid: l.sid, t: l.updatedAt, v: clone(loopValue(l)) })).sort((x, y) => pos(x) - pos(y) || (x.sid < y.sid ? -1 : 1)),
       deleted: s.sync.tombs.map((x) => ({ sid: x.sid, deletedAt: x.deletedAt })).sort((x, y) => (x.sid < y.sid ? -1 : 1)) };
   }
@@ -5217,7 +5594,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       s.sourceDuration = Math.min(MAX_T, Math.max(0, num(m.sourceDuration, 0)));
       s.template = m.template && typeof m.template === 'object' ? m.template : null;
     } else if (k === 'speed') s.rate = Math.min(1.1, Math.max(0.4, num(v, s.rate)));
-    else if (k === 'practice') s.practice = normPractice(v);
+    else if (k === 'practice') { s.practice = normPractice(v); s.drills = normDrills(v && v.drills); }
     else if (k === 'grid') s.grid = normGrid(v);
   }
   const byPos = (x, y) => x.pos - y.pos || (x.sid < y.sid ? -1 : x.sid > y.sid ? 1 : 0);
@@ -5236,7 +5613,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const d = JSON.parse(entry.snap.json);
       for (const u of units) {
         if (u === 'meta') { d.title = s.title; d.artist = s.artist; d.sourceDuration = s.sourceDuration; entry.snap.template = s.template; }
-        else if (u === 'practice') d.practice = clone(s.practice);
+        else if (u === 'practice') { d.practice = clone(s.practice); d.drills = clone(s.drills); }
         else if (u === 'grid') d.grid = s.grid ? clone(s.grid) : null;
         else if (u.sid) {
           const i = d.loops.findIndex((l) => l.sid === u.sid), L = cur.get(u.sid);
@@ -5690,6 +6067,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     s.practice = next;
     changed('practice');
   }
+  // Ear drill settings (one undo step per change; a label per control)
+  const DRILL_LABEL = { answerSet: 'ear: answer set', chords: 'ear: chords', context: 'ear: context', noteOn: 'ear: note', singFirst: 'ear: sing first' };
+  function setDrills(patch, opts) {
+    const s = song();
+    const next = normDrills(Object.assign({}, s.drills, patch || {}));
+    if (canon(next) === canon(s.drills)) return false;
+    const keys = Object.keys(patch || {});
+    record((opts && opts.label) || keys.map((k) => DRILL_LABEL[k] || 'ear: ' + k).join(', '), opts && opts.key);
+    s.drills = next;
+    changed('practice', { drills: true });
+    return true;
+  }
   // ---------- trade mode ----------
   const tradeOn = (p) => tradeMatches(p || song().practice, (p || song().practice).tradeDefault);
   const tradeValues = (p) => ({ gap: p.gap, click: p.click, clickWhen: p.clickWhen, countIn: p.countIn });
@@ -5854,7 +6243,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     addSong, renameSong, removeSong, setActive, updateSong, setRate, setLoopOn,
     selectLoop, addLoop, duplicateLoop, removeLoop, updateLoop,
     setPhrases, addPhrase, updatePhrase, splitPhrase, mergePhrase, removePhrase, starPhrase, renamePhrase, setActivePhrases, setPhraseShift,
-    setPractice, setGrid,
+    setPractice, setGrid, setDrills, defaultDrills, normDrills,
     TRADE_PRESETS, tradePreset, tradeMatches, tradeOn, applyTrade, toggleTrade,
     history, transact, endGesture, sync,
     importAtcfg, exportAtcfg, resetLoopsToTemplate,
@@ -8803,6 +9192,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     lastT = t;
     if (!visible) return;
     const st = P[visible];
+    if (!st) return; // a tab without a picture (Ear)
     if (visible === 'grid') { curBar(t != null ? t : P.grid.at); return; }
     if (!st.head) return;
     if (t == null || !(st.t1 > st.t0) || t < st.t0 || t > st.t1) {
@@ -8860,6 +9250,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     ['A  B', 'loop start / end at playhead'], ['Shift+A  B', 'phrase start / end at playhead'],
     ['N', 'snap on / off (beats or bars: Grid tab)'], ['Alt (drag)', 'bypass snap'],
     ['Shift+click', 'extend phrase run'], ['Enter', 'select the focused loop / phrase row'], ['?', 'this list'],
+    ['#', 'Ear tab, while a drill runs (instead of the keys above)'],
+    ['Enter', 'start the drill / next question'], ['Esc', 'end the drill'],
+    ['1 – 7', 'answer 1 9 3 11 5 13 7 (2 = 9, 4 = 11, 6 = 13 / 6)'], ['Shift+2 3 5 6 7', 'answer b9 #9/b3 #11/b5 b13 b7'],
+    ['Alt+4', 'answer #11'], ['R', 'repeat the question'],
+    ['Space', 'the chord again (no note)'], ['H', 'hear it: root, note, both'],
   ];
 
   // ---------- edge editors (A/B of loop and phrase) ----------
@@ -8904,7 +9299,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     api = a;
     for (const box of U.$$('[data-edge]')) edgeInputs[box.dataset.edge] = edgeEditor(box, box.dataset.edge);
     const dl = $('#keysList');
-    for (const [k, d] of KEYS) dl.append(h('dt', null, ...k.split(/\s{2}/).map((x, i) => [i ? ' ' : '', h('kbd', { text: x })])), h('dd', { text: d }));
+    for (const [k, d] of KEYS) {
+      if (k === '#') { dl.append(h('dt', { class: 'kh', text: d })); continue; } // a section title over the whole row
+      dl.append(h('dt', null, ...k.split(/\s{2}/).map((x, i) => [i ? ' ' : '', h('kbd', { text: x })])), h('dd', { text: d }));
+    }
     const sel = $('#chordPreset');
     GH.chordPresets.forEach((p, i) => sel.append(h('option', { value: String(i), text: p.name })));
     const gm = $('#gapMenu');
@@ -9080,6 +9478,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     $('#tabLoop').hidden = v.tab !== 'loop';
     $('#tabPhrase').hidden = v.tab !== 'phrase';
     $('#tabGrid').hidden = v.tab !== 'grid';
+    $('#tabEar').hidden = v.tab !== 'ear';
     SLP.pics.show(v.tab);
     const L = v.loop, g = v.grid;
     if (v.tab === 'loop') {
@@ -9133,6 +9532,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       }
       SLP.pics.phrase($('#phPic'), { grid: g, peaks: v.peaks, hasAudio: v.hasAudio, phrase: p ? { a: p.a, b: p.b } : null, play: p ? v.play : null,
         lenText: v.lenText, label: p ? (v.phraseIndex + 1) + ' of ' + L.phrases.length : '' });
+    } else if (v.tab === 'ear') {
+      $('#inspMeta').textContent = ''; // the Ear tab renders itself (SLP.ear.render)
     } else {
       const g = v.grid;
       $('#gridNone').hidden = !!g;
@@ -9661,12 +10062,513 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   SLP.syncUI = { init, open, render, get isOpen() { return !panel().hidden; } };
 })();
+// ---- app/ear-audio.js ----
+/* SLP.earAudio — the ear drills' sounds (DRILLS-SPEC.md "Audio"), synthesised in Web Audio on the engine's AudioContext
+ * through a gain node of their own (like the click): nothing is rendered, nothing is fetched, no audio file is needed.
+ *
+ *   play(events, { out }) → { start, end }   schedules a list of events (times in seconds from "now + 60 ms") and replaces
+ *                                             whatever was playing; out = the node to connect to (the engine's master)
+ *   stop()                                    silences everything at once (10 ms fade)
+ *   get playing                               something is still scheduled or sounding
+ * Events: { t, kind, midi | midis, dur, vel, timbre }
+ *   'tone'  the test tone: timbre 'piano' (6 partials, slightly stretched, upper partials decaying faster, 8 ms attack,
+ *           exponential decay to −40 dB over ~1.6 s) or 'organ' (sustained, for long notes)
+ *   'bass'  plucked bass note (comp) · 'shell' a soft piano voicing (comp) · 'drone' held organ chord, quiet · 'tick' metronome
+ * Levels (linear peak of one note before the bus): tone 0.30, bass 0.26, shell 0.10 per note, drone 0.05 per note, tick 0.4 ×
+ * the click volume; the drill bus is 0.8. These are guesses made without listening: they need the owner's ears.
+ */
+(() => {
+  'use strict';
+  const SLP = (typeof self !== 'undefined' ? self : globalThis).SLP ||= {};
+  if (typeof window === 'undefined') return;
+
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  let ctx = null, cur = null, lastEnd = 0;
+  const LEAD = 0.06; // scheduling margin
+
+  function voiceOut(bus, t0, tEnd, rel) {
+    const v = ctx.createGain();
+    v.gain.setValueAtTime(1, t0);
+    v.gain.setValueAtTime(1, tEnd);
+    v.gain.linearRampToValueAtTime(0, tEnd + rel);
+    v.connect(bus);
+    return v;
+  }
+  function partial(dest, f, amp, t0, attack, decay, tStop, nodes) {
+    if (f > Math.min(9000, ctx.sampleRate * 0.45)) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = f;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(amp, t0 + attack);
+    if (decay) g.gain.exponentialRampToValueAtTime(Math.max(1e-5, amp * 0.01), t0 + attack + decay); // −40 dB
+    o.connect(g); g.connect(dest);
+    o.start(t0); o.stop(tStop);
+    nodes.push(o);
+  }
+  // piano-like: 6 partials, inharmonic stretch B = 0.0004, partial k reaches −40 dB after 1.6 s / (1 + 0.45 (k − 1))
+  const PIANO = [1, 0.55, 0.32, 0.2, 0.12, 0.07];
+  const ORGAN = [1, 0.6, 0.38, 0.22, 0.12];
+  function piano(bus, midi, t0, dur, vel, nodes, decayScale) {
+    const f0 = hz(midi), sum = PIANO.reduce((a, b) => a + b, 0), tEnd = t0 + dur, rel = 0.09;
+    const v = voiceOut(bus, t0, tEnd, rel);
+    const ds = decayScale || 1;
+    // lower notes ring longer, higher ones shorter (a little)
+    const reg = Math.min(1.4, Math.max(0.7, Math.pow(2, (60 - midi) / 24)));
+    PIANO.forEach((a, i) => {
+      const k = i + 1;
+      partial(v, f0 * k * Math.sqrt(1 + 0.0004 * k * k), vel * a / sum, t0, 0.008, 1.6 * ds * reg / (1 + 0.45 * i), tEnd + rel + 0.02, nodes);
+    });
+  }
+  function organ(bus, midi, t0, dur, vel, nodes, attack) {
+    const f0 = hz(midi), sum = ORGAN.reduce((a, b) => a + b, 0), tEnd = t0 + dur, rel = 0.07;
+    const v = voiceOut(bus, t0, tEnd, rel);
+    ORGAN.forEach((a, i) => partial(v, f0 * (i + 1), vel * a / sum, t0, attack || 0.012, 0, tEnd + rel + 0.02, nodes));
+  }
+  function bass(bus, midi, t0, dur, vel, nodes) {
+    const f0 = hz(midi), tEnd = t0 + dur, rel = 0.06;
+    const v = voiceOut(bus, t0, tEnd, rel);
+    [[1, 1], [2, 0.45], [3, 0.18]].forEach(([k, a]) => partial(v, f0 * k, vel * a / 1.63, t0, 0.006, 0.9 / k, tEnd + rel + 0.02, nodes));
+  }
+  function tick(bus, t0, accent, vol, nodes) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = accent ? 2200 : 1600;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.4 * vol, t0 + 0.0004);
+    g.gain.exponentialRampToValueAtTime(1e-4, t0 + 0.028);
+    o.connect(g); g.connect(bus);
+    o.start(t0); o.stop(t0 + 0.04);
+    nodes.push(o);
+  }
+
+  function stop() {
+    if (!cur || !ctx) { cur = null; return; }
+    const c = cur, now = ctx.currentTime;
+    cur = null;
+    try { c.bus.gain.cancelScheduledValues(now); c.bus.gain.setValueAtTime(c.bus.gain.value, now); c.bus.gain.linearRampToValueAtTime(0, now + 0.01); } catch (e) { /* closed context */ }
+    for (const n of c.nodes) { try { n.stop(now + 0.03); } catch (e) { /* already stopped */ } }
+    setTimeout(() => { try { c.bus.disconnect(); } catch (e) { /* gone */ } }, 200);
+    lastEnd = now;
+  }
+  function play(events, o) {
+    const out = o && o.out;
+    if (!out) return null;
+    ctx = out.context;
+    stop();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const bus = ctx.createGain();
+    bus.gain.value = 0.8;
+    bus.connect(out);
+    const nodes = [], t0 = ctx.currentTime + LEAD;
+    let end = t0;
+    for (const e of events || []) {
+      const t = t0 + Math.max(0, e.t || 0), dur = Math.max(0.03, e.dur || 0.5), vel = e.vel == null ? 1 : e.vel;
+      const ms = e.midis || (e.midi != null ? [e.midi] : []);
+      if (e.kind === 'tone') for (const m of ms) (e.timbre === 'organ' ? organ(bus, m, t, dur, 0.30 * vel, nodes) : piano(bus, m, t, dur, 0.30 * vel, nodes));
+      else if (e.kind === 'bass') for (const m of ms) bass(bus, m, t, dur, 0.26 * vel, nodes);
+      else if (e.kind === 'shell') for (const m of ms) piano(bus, m, t, dur, 0.10 * vel, nodes, 0.6);
+      else if (e.kind === 'drone') for (const m of ms) organ(bus, m, t, dur, 0.05 * vel, nodes, 0.06);
+      else if (e.kind === 'tick') tick(bus, t, !!e.accent, vel, nodes);
+      end = Math.max(end, t + dur);
+    }
+    cur = { bus, nodes, start: t0, end };
+    lastEnd = end;
+    return { start: t0, end, ctx };
+  }
+
+  SLP.earAudio = { play, stop, get playing() { return !!(cur && ctx && ctx.currentTime < lastEnd + 0.1); }, get ctx() { return ctx; } };
+})();
+// ---- app/ear.js ----
+/* SLP.ear — the Ear tab: drill A "Degree over the chord" (DRILLS-SPEC.md, phase 1: Comp and Drone contexts).
+ *
+ *   init(api)      api: { status(msg, warn), engine, openGrid() }
+ *   render()       refreshes the tab from the song (main.js calls it with the inspector); ends a running drill when the Ear
+ *                  tab is no longer the active tab, the song changed or the grid / chart went away
+ *   key(e) → bool  the drill keys (1–7, Shift+digit, Alt+4, R, Space, Enter, H, Esc): ONLY while the Ear tab is the active
+ *                  tab and a drill runs (Enter also starts one on the Ear tab). Everywhere else main.js's keys are unchanged.
+ *   start() · stop(reason) · next() · answer(semis) · repeat() · context() · hear()
+ *   isActive()     the Ear tab is the tab on screen (desktop inspector tab 'ear', phone tab 'ear')
+ *   clearHistory() the per-viewer answer history (More → Clear ear history)
+ *   state          test hook: { on, phase, q, picked, events, skipped }
+ *
+ * Flow per question: one bar of the chord (Comp: bass on 1 and 3, shell voicing on 2 and 4, a swung pickup; Drone: root and
+ * shell held) at the grid's tempo → the test tone (on beat 3 under the bar, or after it over a quiet drone), 2 beats →
+ * with "Sing first" a silent count of 2 beats (the click on the even beats if the song's click is on) → the answer buttons
+ * enable → reveal: the right chip filled, a wrong pick outlined, "F over Bb7 = 5" → Hear it (root, note, both) → Next.
+ * No scores, no counts: the last 10 answers are listed (collapsible), nothing is totalled.
+ * Per song (synced, undoable): song.drills via SLP.store.setDrills. Per viewer: register, tone, the list's open state
+ * (prefs), and the answer history (localStorage 'solo-loop-player.ear.history', last 300, never synced; weights only).
+ */
+(() => {
+  'use strict';
+  const SLP = (typeof self !== 'undefined' ? self : globalThis).SLP ||= {};
+  if (typeof document === 'undefined') return;
+  const U = SLP.ui, $ = U.$, h = U.h, T = SLP.theory, S = SLP.store, A = SLP.earAudio;
+  const GH = SLP.beats.gridHelpers;
+  const NEED = 'Needs a bar grid and a chord chart (Grid tab)';
+  const HIST_KEY = 'solo-loop-player.ear.history', HIST_MAX = 300;
+  const REGISTERS = [[48, 60, 'C3–C4'], [55, 67, 'G3–G4'], [60, 72, 'C4–C5'], [65, 77, 'F4–F5'], [67, 79, 'G4–G5'], [72, 84, 'C5–C6']];
+  const GENERIC = 'C7'; // custom chips are labelled as over a dominant chord
+  const KEYHINT = { 0: '1', 1: '⇧2', 2: '2', 3: '⇧3', 4: '3', 5: '4', 6: '⇧5', 7: '5', 8: '⇧6', 9: '6', 10: '⇧7', 11: '7' };
+  let api = null;
+  const ses = { on: false, phase: 'idle', q: null, picked: null, last: null, timers: [], songId: null, heard: false, skipped: [], events: null };
+
+  // ---------- history (per viewer, local) ----------
+  function history() { try { const a = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function pushHistory(e) {
+    const a = history();
+    a.push(e);
+    while (a.length > HIST_MAX) a.shift();
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(a)); } catch (err) { /* storage full or blocked: weights only */ }
+  }
+  function clearHistory() { try { localStorage.removeItem(HIST_KEY); } catch (e) { /* ignore */ } render(); }
+
+  // ---------- song facts ----------
+  const song = () => S.song();
+  const drills = () => song().drills || S.defaultDrills();
+  function chartChords() {
+    const g = song().grid;
+    return g ? T.distinctChords(g.chords || [], g.beatsPerBar) : [];
+  }
+  const ready = () => !!song().grid && chartChords().length > 0;
+  function activeChords() {
+    const all = chartChords(), sel = drills().chords;
+    if (!sel) return all;
+    const pick = all.filter((c) => sel.includes(c));
+    return pick.length ? pick : all; // chosen chords no longer in the chart: every chord
+  }
+  function beatSec() {
+    const g = song().grid;
+    if (!g || g.bars.length < 2) return 0.5;
+    const b = (g.bars[g.bars.length - 1] - g.bars[0]) / (g.bars.length - 1) / g.beatsPerBar;
+    return Math.min(2, Math.max(0.25, b));
+  }
+  const bpb = () => (song().grid ? Math.max(1, Math.round(song().grid.beatsPerBar)) : 4);
+  function register() {
+    const v = String(U.prefs.get('earRegister') || '60-72').split('-').map(Number);
+    return REGISTERS.find((r) => r[0] === v[0] && r[1] === v[1]) || REGISTERS[2];
+  }
+  const timbre = () => (U.prefs.get('earTone') === 'organ' ? 'organ' : 'piano');
+  const setOf = (chord) => T.answerSet(chord, drills().answerSet);
+  const presetName = () => (Array.isArray(drills().answerSet) ? 'custom' : drills().answerSet);
+
+  function isActive() {
+    const phone = SLP.phone && SLP.phone.on;
+    return phone ? $('#app').dataset.ptab === 'ear' : U.prefs.get('inspectorTab') === 'ear';
+  }
+
+  // ---------- sound plans ----------
+  // the bass root (C2…B2), the shell voicing (3rd and 7th) between E3 and E4, the drone root (C3…B3)
+  function voicing(c) {
+    const gt = T.guideTones(c), up = (pc, lo) => lo + (((pc - lo) % 12) + 12) % 12;
+    return { bass: 36 + c.root, shell: [up(c.root + gt.third, 52), up(c.root + gt.seventh, 52)], root3: 48 + c.root };
+  }
+  function contextEvents(c, withTone, q) {
+    const d = drills(), n = bpb(), beat = beatSec(), v = voicing(c), ev = [];
+    const ctx = d.context === 'drone' ? 'drone' : 'comp'; // 'song' (phase 2) plays as Comp
+    if (ctx === 'comp') {
+      const half = n >= 4 ? Math.floor(n / 2) : null;
+      for (let i = 0; i < n; i++) {
+        if (i === 0 || i === half) ev.push({ t: i * beat, kind: 'bass', midi: v.bass, dur: beat * 0.92, vel: i === 0 ? 1 : 0.85 });
+        if (i % 2 === 1) ev.push({ t: (i + 0.04) * beat, kind: 'shell', midis: v.shell, dur: beat * 0.55, vel: 1 });
+      }
+      // slightly swung: a soft pickup on the swung "and" of the last beat
+      if (n >= 2) ev.push({ t: (n - 1 + 2 / 3) * beat, kind: 'shell', midis: v.shell, dur: beat * 0.3, vel: 0.55 });
+    } else ev.push({ t: 0, kind: 'drone', midis: [v.root3].concat(v.shell), dur: n * beat, vel: 1 });
+    if (!withTone) return { events: ev, toneAt: null, end: n * beat };
+    const after = d.noteOn === 'after', toneAt = after ? n * beat : Math.min(2, n - 1) * beat;
+    if (after) ev.push({ t: toneAt, kind: 'drone', midis: [v.root3].concat(v.shell), dur: 2 * beat, vel: 0.7 });
+    ev.push({ t: toneAt, kind: 'tone', midi: q.midi, dur: 2 * beat, timbre: timbre() });
+    let end = Math.max(n * beat, toneAt + 2 * beat), answerAt = toneAt;
+    if (d.singFirst) {
+      // a silent count of 2 beats after the tone (the click on the even beats of the bar, when the song's click is on)
+      const p = song().practice, click = p.click && p.click !== 'off', startBeat = Math.round(toneAt / beat) + 2;
+      for (let j = 0; j < 2; j++) {
+        const pos = (startBeat + j) % n;
+        if (click && (pos + 1) % 2 === 0) ev.push({ t: (startBeat + j) * beat, kind: 'tick', vel: p.clickVolume == null ? 0.5 : p.clickVolume, dur: 0.04 });
+      }
+      answerAt = toneAt + 4 * beat;
+      end = Math.max(end, answerAt);
+    }
+    return { events: ev, toneAt, answerAt, end };
+  }
+
+  // ---------- session ----------
+  function clearTimers() { for (const t of ses.timers) clearTimeout(t); ses.timers = []; }
+  function later(sec, fn, info) { ses.timers.push(setTimeout(fn, Math.max(0, sec * 1000))); if (info) info.n++; }
+  function out() { return api && api.engine ? api.engine.output : null; }
+  function sound(events) {
+    ses.events = events;
+    const r = A.play(events, { out: out() });
+    return r ? Math.max(0, r.start - r.ctx.currentTime) : 0.06;
+  }
+  function start() {
+    if (!ready()) { status(NEED + '.'); return; }
+    const E = api.engine;
+    if (E.state.playing) E.pause(); // the drill and loop playback never sound together
+    ses.on = true; ses.songId = song().id; ses.last = null;
+    next();
+  }
+  function stop(reason) {
+    if (!ses.on && ses.phase === 'idle') return;
+    clearTimers();
+    A.stop();
+    ses.on = false; ses.phase = 'idle'; ses.q = null; ses.picked = null;
+    if (reason === 'play') status('Ear drill ended: playback started.');
+    else if (reason === 'tab') { /* leaving the tab: quietly */ }
+    render();
+  }
+  function next() {
+    if (!ses.on) { start(); return; }
+    clearTimers();
+    const r = T.nextQuestion({ chords: activeChords(), set: drills().answerSet, history: history(), last: ses.last,
+      rng: Math.random, low: register()[0], high: register()[1] });
+    ses.skipped = r.skipped;
+    if (!r.question) { status('None of these chords can be drilled: ' + r.skipped.join(', ') + '.'); stop(); return; }
+    if (r.skipped.length) status('Skipped ' + r.skipped.join(', ') + ' (not a chord symbol the drill can read).');
+    ses.q = r.question; ses.picked = null; ses.heard = false; ses.phase = 'listen';
+    ses.last = { chord: r.question.chord, semis: r.question.semis };
+    playQuestion();
+  }
+  function playQuestion() {
+    const q = ses.q, c = T.parseChord(q.chord);
+    clearTimers();
+    const plan = contextEvents(c, true, q), lead = sound(plan.events);
+    const revealed = ses.phase === 'revealed';
+    if (!revealed) setPhase('listen');
+    later(lead + plan.toneAt, () => { ses.heard = true; if (ses.phase === 'listen' && !drills().singFirst) setPhase('answer'); else if (ses.phase === 'listen') setPhase('sing-wait'); });
+    if (drills().singFirst) later(lead + plan.toneAt + 2 * beatSec(), () => { if (ses.phase === 'sing-wait' || ses.phase === 'listen') setPhase('sing'); });
+    later(lead + plan.answerAt, () => { if (ses.phase !== 'revealed') setPhase('answer'); });
+  }
+  function setPhase(p) { ses.phase = p; render(); }
+  function answer(semis) {
+    if (!ses.on || !ses.q) return;
+    if (ses.phase === 'revealed') return;
+    if (ses.phase !== 'answer') { status(drills().singFirst && ses.heard ? 'Sing down to the root first, then answer.' : 'Wait for the note, then answer.'); return; }
+    ses.picked = semis;
+    pushHistory({ t: Date.now(), chord: ses.q.chord, semis: ses.q.semis, answered: semis });
+    setPhase('revealed');
+  }
+  function repeat() { if (ses.on && ses.q) playQuestion(); }
+  function context() {
+    if (!ses.on || !ses.q) return;
+    if (!ses.heard) { playQuestion(); return; } // the note has not sounded yet: the whole question again
+    clearTimers();
+    sound(contextEvents(T.parseChord(ses.q.chord), false).events);
+    if (ses.phase !== 'revealed') setPhase('answer');
+  }
+  function hear() {
+    if (!ses.on || !ses.q) return;
+    if (ses.phase !== 'revealed') { status('Hear it plays the answer: answer first.'); return; }
+    const q = ses.q, b = Math.max(0.5, beatSec()), root = q.semis ? q.midi - q.semis : q.midi - 12, tb = timbre();
+    sound([{ t: 0, kind: 'tone', midi: root, dur: b, timbre: tb }, { t: b, kind: 'tone', midi: q.midi, dur: b, timbre: tb },
+      { t: 2 * b, kind: 'tone', midis: [root, q.midi], dur: 2 * b, timbre: tb, vel: 0.8 }]);
+  }
+  function status(msg, warn) { if (api) api.status(msg, warn); }
+
+  // ---------- keys ----------
+  function key(e) {
+    if (!isActive() || e.metaKey || e.ctrlKey) return false;
+    const code = e.code, t = e.target;
+    const onControl = t && t.closest && t.closest('button, a, li.row, [role=tab]');
+    if (!ses.on) {
+      if ((code === 'Enter' || code === 'NumpadEnter') && !onControl && ready()) { start(); return true; }
+      return false;
+    }
+    const m = /^Digit([1-9])$/.exec(code);
+    if (m) {
+      const d = Number(m[1]), K = T.KEY_DEGREES;
+      const semis = e.altKey ? K.alt[d] : e.shiftKey ? K.shift[d] : K.plain[d];
+      if (semis != null) answer(semis);
+      return true; // every digit belongs to the drill while it runs (no loop switching mid-question)
+    }
+    if (e.altKey) return false;
+    if (code === 'KeyR' && !e.shiftKey) { repeat(); return true; }
+    if (code === 'Space') { context(); return true; }
+    if ((code === 'Enter' || code === 'NumpadEnter') && !onControl) { next(); return true; }
+    if (code === 'KeyH') { hear(); return true; }
+    if (code === 'Escape') { stop(); status('Ear drill ended.'); return true; }
+    return false;
+  }
+
+  // ---------- rendering ----------
+  const setSeg = (seg, v) => {
+    for (const b of seg.querySelectorAll(':scope > button')) { const on = b.dataset.v === v; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }
+  };
+  function chordChips() {
+    const box = $('#earChords'), all = chartChords(), act = new Set(activeChords());
+    const sig = all.join('|') + '#' + [...act].join('|');
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    box.textContent = '';
+    for (const c of all) {
+      const ok = !!T.parseChord(c);
+      box.append(h('button', { type: 'button', class: 'ear-chip', 'aria-pressed': String(act.has(c)), 'data-chord': c, disabled: !ok,
+        title: ok ? (act.has(c) ? 'Drilled: click to leave ' + c + ' out' : 'Left out: click to drill ' + c) : c + ' is not a chord symbol the drill can read (skipped)', text: c }));
+    }
+  }
+  function customChips() {
+    const row = $('#earCustomRow'), box = $('#earCustom'), set = drills().answerSet;
+    row.hidden = !Array.isArray(set);
+    if (row.hidden) return;
+    const sig = set.join(',');
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    box.textContent = '';
+    for (let s = 0; s < 12; s++) {
+      const lab = T.degreeLabel(GENERIC, s);
+      box.append(h('button', { type: 'button', class: 'ear-chip', 'aria-pressed': String(set.includes(s)), 'data-semis': String(s),
+        title: lab + ' (' + s + ' semitones above the root; the label follows each chord)', text: T.shortLabel(lab) }));
+    }
+  }
+  function answerButtons() {
+    const box = $('#earAns'), q = ses.q, chord = q ? q.chord : activeChords()[0] || GENERIC, set = setOf(chord);
+    const sig = chord + '#' + set.join(',');
+    if (box.dataset.sig !== sig) {
+      box.dataset.sig = sig;
+      box.textContent = '';
+      for (const s of set) {
+        const lab = T.degreeLabel(chord, s);
+        const b = h('button', { type: 'button', class: 'ear-a', 'data-semis': String(s), title: lab + ' over ' + chord + ' (key ' + KEYHINT[s] + (s === 6 ? ' or Alt+4' : '') + ')' },
+          h('span', { class: 'ea-l', text: T.shortLabel(lab) }), h('span', { class: 'ea-k', text: KEYHINT[s] + (s === 6 ? ' ⌥4' : '') }));
+        b.setAttribute('aria-label', lab);
+        box.append(b);
+      }
+    }
+    const on = ses.on && ses.phase === 'answer', rev = ses.phase === 'revealed';
+    for (const b of box.children) {
+      const s = Number(b.dataset.semis);
+      b.disabled = !on && !rev;
+      b.classList.toggle('correct', rev && s === q.semis);
+      b.classList.toggle('wrong', rev && ses.picked === s && s !== q.semis);
+      b.setAttribute('aria-disabled', String(rev));
+    }
+  }
+  function promptText() {
+    const q = ses.q;
+    if (!ses.on || !q) return 'Start (Enter): one bar of the chord, then one note. Name its degree over the chord.';
+    const note = T.pcName(q.root + q.semis, q.sharps);
+    if (ses.phase === 'listen') return q.chord + ': listen…';
+    if (ses.phase === 'sing-wait') return q.chord + ': listen…';
+    if (ses.phase === 'sing') return q.chord + ': sing down to the root…';
+    if (ses.phase === 'answer') return q.chord + ': which degree? (1–7, Shift for the flat one)';
+    const right = note + ' over ' + q.chord + ' = ' + q.label;
+    if (ses.picked === q.semis || ses.picked == null) return right;
+    return right + ' · you said ' + T.degreeLabel(q.chord, ses.picked);
+  }
+  function lastList() {
+    const btn = $('#earLastBtn'), ol = $('#earLast'), open = !!U.prefs.get('earLast');
+    btn.setAttribute('aria-expanded', String(open));
+    ol.hidden = !open;
+    const items = history().slice(-10).reverse();
+    const sig = open + JSON.stringify(items);
+    if (ol.dataset.sig === sig) return;
+    ol.dataset.sig = sig;
+    ol.textContent = '';
+    if (!items.length) { ol.append(h('li', { class: 'ear-none', text: 'No answers yet on this device.' })); return; }
+    for (const e of items) {
+      const c = T.parseChord(e.chord);
+      const note = c ? T.pcName(c.root + e.semis, c.sharps) : '?', lab = c ? T.shortLabel(T.degreeLabel(c, e.semis)) : String(e.semis);
+      const you = c && typeof e.answered === 'number' ? T.shortLabel(T.degreeLabel(c, e.answered)) : '–';
+      ol.append(h('li', null, h('span', { class: 'el-q', text: e.chord + ' · ' + note + ' · ' + lab }),
+        h('span', { class: 'el-a' + (e.answered === e.semis ? '' : ' diff'), text: 'you: ' + you })));
+    }
+  }
+  function render() {
+    if (!api) return;
+    const s = song();
+    if (ses.on && (!isActive() || ses.songId !== s.id || !ready())) { stop('tab'); return; }
+    const ok = ready();
+    $('#earOff').hidden = ok;
+    $('#earOn').hidden = !ok;
+    if (!ok) return;
+    const d = drills();
+    setSeg($('#earCtx'), d.context === 'drone' ? 'drone' : 'comp');
+    setSeg($('#earNote'), d.noteOn);
+    setSeg($('#earSet'), presetName());
+    setSeg($('#earTone'), timbre());
+    $('#earSing').setAttribute('aria-pressed', String(!!d.singFirst));
+    const reg = $('#earReg'), rv = register()[0] + '-' + register()[1];
+    if (document.activeElement !== reg) reg.value = rv;
+    chordChips();
+    customChips();
+    answerButtons();
+    const st = $('#earStart');
+    U.label(st, ses.on ? 'End' : 'Start');
+    st.classList.toggle('primary', !ses.on);
+    st.title = ses.on ? 'End the drill (Esc)' : 'Start the drill (Enter): Space, R, H and the digits belong to the drill while it runs';
+    const pr = $('#earPrompt'), pt = promptText();
+    if (pr.textContent !== pt) { pr.textContent = pt; pr.title = pt; }
+    pr.classList.toggle('revealed', ses.phase === 'revealed');
+    $('#earRepeat').disabled = !ses.on;
+    $('#earContext').disabled = !ses.on;
+    $('#earHear').disabled = !(ses.on && ses.phase === 'revealed');
+    $('#earNext').disabled = !ses.on;
+    $('#tabEar').classList.toggle('running', ses.on);
+    lastList();
+  }
+
+  // ---------- bindings ----------
+  function segClicks(seg, fn) {
+    seg.addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (b && !b.disabled) fn(b.dataset.v); });
+    seg.addEventListener('keydown', (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+      e.preventDefault(); e.stopPropagation();
+      const bs = [...seg.querySelectorAll(':scope > button:not(:disabled)')], i = bs.indexOf(document.activeElement);
+      const nb = bs[(Math.max(0, i) + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length];
+      if (nb) { fn(nb.dataset.v); nb.focus(); }
+    });
+  }
+  function init(a) {
+    api = a;
+    const reg = $('#earReg');
+    for (const [lo, hi, name] of REGISTERS) reg.append(h('option', { value: lo + '-' + hi, text: name }));
+    $('#earStart').addEventListener('click', () => { if (ses.on) { stop(); status('Ear drill ended.'); } else start(); });
+    $('#earNext').addEventListener('click', () => next());
+    $('#earRepeat').addEventListener('click', () => repeat());
+    $('#earContext').addEventListener('click', () => context());
+    $('#earHear').addEventListener('click', () => hear());
+    $('#earToGrid').addEventListener('click', () => api.openGrid());
+    $('#earAns').addEventListener('click', (e) => { const b = e.target.closest('button[data-semis]'); if (b) answer(Number(b.dataset.semis)); });
+    segClicks($('#earCtx'), (v) => S.setDrills({ context: v }));
+    segClicks($('#earNote'), (v) => S.setDrills({ noteOn: v }));
+    segClicks($('#earSet'), (v) => {
+      if (v === 'custom') { if (!Array.isArray(drills().answerSet)) S.setDrills({ answerSet: T.answerSet(GENERIC, drills().answerSet) }, { label: 'ear: answer set' }); }
+      else S.setDrills({ answerSet: v });
+    });
+    segClicks($('#earTone'), (v) => { U.prefs.set('earTone', v); render(); });
+    $('#earSing').addEventListener('click', () => S.setDrills({ singFirst: !drills().singFirst }));
+    reg.addEventListener('change', () => { U.prefs.set('earRegister', reg.value); reg.blur(); render(); status('Register ' + register()[2] + ': question notes lie in it.'); });
+    $('#earChords').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-chord]');
+      if (!b) return;
+      const all = chartChords(), act = new Set(activeChords()), c = b.dataset.chord;
+      if (act.has(c)) { if (act.size === 1) { status('At least one chord stays in the drill.'); return; } act.delete(c); } else act.add(c);
+      const list = all.filter((x) => act.has(x));
+      S.setDrills({ chords: list.length === all.length ? null : list });
+    });
+    $('#earCustom').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-semis]');
+      if (!b) return;
+      const set = new Set(drills().answerSet), s = Number(b.dataset.semis);
+      if (set.has(s)) { if (set.size <= 2) { status('A custom answer set needs at least two degrees.'); return; } set.delete(s); } else set.add(s);
+      S.setDrills({ answerSet: [...set] });
+    });
+    $('#earLastBtn').addEventListener('click', () => { U.prefs.set('earLast', !U.prefs.get('earLast')); render(); });
+    // loop playback (Play, Space outside the drill, the lock screen…) ends the drill
+    api.engine.on('state', (st) => { if (st.playing && ses.on) stop('play'); });
+  }
+
+  SLP.ear = { init, render, key, start, stop, next, answer, repeat, context, hear, isActive, clearHistory, history,
+    get running() { return ses.on; },
+    get state() { return { on: ses.on, phase: ses.phase, q: ses.q ? Object.assign({}, ses.q) : null, picked: ses.picked, events: ses.events, skipped: ses.skipped.slice() }; } };
+})();
 // ---- app/ui-phone.js ----
 /* SLP.phone — the phone layout's behaviour (2026-11; the layout itself is the CSS block "Phone layout" in page.html).
  *
  *   init(api)          api: { refresh() (re-render everything), status(msg, warn), onChange(isPhone) }
  *   get on             the phone layout is active (same media query as the CSS)
- *   tab(name)          'loops' | 'phrases' | 'practice' | 'edit' (per-viewer pref 'phoneTab')
+ *   tab(name)          'loops' | 'phrases' | 'practice' | 'edit' | 'ear' (per-viewer pref 'phoneTab'; Ear = the inspector showing
+ *                      only the Ear drills, see SLP.ear)
  *   menu(open)         the top bar's Menu (proxies for Rename / Add / Delete song, Undo / Redo, Load audio, Sync and the
  *                      More items: every entry clicks the real desktop control, so there is one code path)
  *
@@ -9685,7 +10587,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   if (typeof document === 'undefined') return;
   const U = SLP.ui, $ = U.$, h = U.h;
   const MQ = '(max-width: 699px), (pointer: coarse) and (max-height: 520px)';
-  const TABS = ['loops', 'phrases', 'practice', 'edit'];
+  const TABS = ['loops', 'phrases', 'practice', 'edit', 'ear'];
   const MOVE = ['#tradeWrap', '#practiceText'];
   let api = null, mq = null, on = false;
   const moved = [];
@@ -9749,6 +10651,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     { id: 'pmImportBk', label: 'Import backup…', real: '#miImportBk' },
     { id: 'pmCopy', label: 'Copy loop list', real: '#miCopy' },
     { id: 'pmReset', label: 'Reset loops to the imported file', real: '#miReset', armed: 'Tap again: replaces all loops' },
+    { id: 'pmEarClear', label: 'Clear ear history', real: '#miEarClear', armed: 'Tap again: forget the ear answers' },
   ];
   function buildMenu() {
     const m = $('#phoneMenu');
@@ -10286,10 +11189,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return b - a >= 0.05 ? { a, b } : null;
   }
   const insideLoop = (p) => Math.min(loop().b, p.b) - Math.max(loop().a, p.a) >= 0.05;
-  // Inspector follows what the user clicked (loop → Loop tab, phrase → Phrase tab); the Grid tab stays.
+  // Inspector follows what the user clicked (loop → Loop tab, phrase → Phrase tab); the Grid and Ear tabs stay.
   function followTab(tab) {
     const cur = U.prefs.get('inspectorTab');
-    if (cur === 'grid' || cur === tab) return;
+    if (cur === 'grid' || cur === 'ear' || cur === tab) return;
     U.prefs.set('inspectorTab', tab);
     queue('insp');
   }
@@ -10956,6 +11859,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     for (const p of parts) dirty.add(p);
     if (!renderQueued) { renderQueued = true; queueMicrotask(flush); }
   }
+  // The inspector tab on screen: the desktop's choice; on a phone the Ear tab is a tab-bar entry of its own (the Edit tab
+  // shows Loop / Phrase / Grid only, and falls back to Loop when the desktop choice was Ear).
+  function inspTab() {
+    const pref = U.prefs.get('inspectorTab');
+    if (!(SLP.phone && SLP.phone.on)) return pref;
+    return $('#app').dataset.ptab === 'ear' ? 'ear' : pref === 'ear' ? 'loop' : pref;
+  }
   function phraseView() {
     const L = loop(), ix = selectedIndices();
     const selected = new Set();
@@ -10978,13 +11888,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const pi = fp && ix && k >= ix[0] && k <= ix[1] ? playInfo() : null;
       const selected = new Set();
       if (ix) for (let j = ix[0]; j <= ix[1]; j++) selected.add(L.phrases[j].id);
-      P.inspector({ tab: U.prefs.get('inspectorTab'), song: s, loop: L, phrase: fp, phraseIndex: k,
+      P.inspector({ tab: inspTab(), song: s, loop: L, phrase: fp, phraseIndex: k,
         grid: s.grid, hasAudio: E.hasAudio, beatsBusy: !!app.beats, snap: snapMode(), fitUndo: fitUndoValid(),
         tap: app.tap ? { taps: app.tap.taps.length, clean: GH.cleanTaps(app.tap.taps), playing: !!app.st.playing } : null,
         take: takeValid() ? app.take.applied : null, barSel: s.grid ? barSelIndex() : null,
         win: fp ? { text: windowText(fp), fixed: !!fixedBeats(), shift: fp.shift || 0, length: (SHAPE_NAMES[s.practice.length] || lenName(s.practice.length)).toLowerCase() } : null,
         peaks: E.peaks, play: pi, lenText: pi ? lengthDetail(pi) : '', selected, playhead: E.hasAudio ? E.time : null });
     }
+    if (has('insp') || has('practice')) SLP.ear.render();
     if (has('transport')) P.transport({ song: s, st: app.st, hasAudio: E.hasAudio, engineText: engineText(), smooth: app.st.smooth === 'ready' && app.st.mode === 'buffer' });
     if (has('practice')) P.practice(s);
     if (has('practice') || has('practiceText') || has('phrases') || has('loops') || has('insp')) { noteShape(); P.shape(s, shapeInfo()); }
@@ -11283,6 +12194,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     } catch (e) { U.status(e.message, true); }
   });
   $('#miKeys').addEventListener('click', () => setKeys(true));
+  U.armed($('#miEarClear'), 'Click again: forget the ear answers', () => { setMenu(false); SLP.ear.clearHistory(); U.status('Ear drill history cleared on this device.'); });
   $('#miSync').addEventListener('click', () => { setMenu(false); keysPanel.hidden = true; SLP.syncUI.open(true); });
   $('#keysClose').addEventListener('click', () => setKeys(false));
 
@@ -12057,6 +12969,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     else if (typing(e.target)) return; // text fields keep their own (native) undo
     if ((e.metaKey || e.ctrlKey) && !e.altKey && e.code === 'KeyZ') { e.preventDefault(); doHistory(e.shiftKey ? 'redo' : 'undo'); return; }
     if (e.metaKey || e.ctrlKey) return;
+    // Ear drill keys (1–7, Shift+digit, Alt+4, R, Space, Enter, H, Esc): only while the Ear tab is on screen and a drill runs
+    // (Enter also starts one there). Everywhere else the keys below are unchanged.
+    if (SLP.ear.key(e)) { e.preventDefault(); return; }
     const range = e.target && e.target.type === 'range';
     const code = e.code, sh = e.shiftKey;
     let handled = true;
@@ -12142,6 +13057,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   });
   $('#phWinL').addEventListener('click', () => slideWindow(-2));
   $('#phWinR').addEventListener('click', () => slideWindow(2));
+  // Ear tab (drill A, DRILLS-SPEC.md): its own sounds on the engine's AudioContext; loop playback ends a running drill
+  SLP.ear.init({ status: (m, w) => U.status(m, w), engine: E,
+    openGrid: () => { U.prefs.set('inspectorTab', 'grid'); if (SLP.phone && SLP.phone.on) SLP.phone.tab('edit'); queue('insp'); } });
   SLP.phone.init({ refresh: () => { queue('all'); W.invalidate(); }, status: (m, w) => U.status(m, w) });
   SLP.pwa.init({ engine: E, status: (m, w) => U.status(m, w), playPause: (resume) => playPause(resume), step: (d) => stepPhrase(d),
     songTitle: () => ({ title: song().title, artist: song().artist }) });
