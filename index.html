@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9g0Mt9+6/kI/kG6hXL50o024gEETyiCSiejq37oiBjQ='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ffLWmeuyA2SsT3VmFJQLZG400byZ9e0bm9/7GVhrtk8='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -9798,9 +9798,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // An installed iPhone app (standalone, black-translucent status bar) can report a layout viewport that is shorter than the
   // screen by the status bar (the app was 59 px short and left an empty band under the tab bar). When it is, the app is sized
   // to the screen. Elsewhere (Safari tab, desktop emulation) nothing is set and `position: fixed; inset: 0` does the job.
+  let latch = null, applied = null, panelApplied = null;
   function measure() {
     const root = document.documentElement;
-    if (!on) { root.style.removeProperty('--app-h'); root.style.removeProperty('--panel-h'); root.classList.remove('fullh'); return; }
+    if (!on) { latch = null; applied = null; panelApplied = null; root.style.removeProperty('--app-h'); root.style.removeProperty('--panel-h'); root.classList.remove('fullh'); return; }
     const standalone = navigator.standalone === true || (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches);
     const vv = window.visualViewport;
     const iw = window.innerWidth, ih = window.innerHeight;
@@ -9811,15 +9812,25 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     }
     // Round 3: the app box must not stay position: fixed when it is taller than the layout viewport (WebKit clips it there,
     // the owner's tab bar was cut at 793 of 852 px): .fullh makes html / body the screen height and the app absolute.
-    const tall = H > ih + 0.5;
-    if (tall) root.style.setProperty('--app-h', H + 'px'); else root.style.removeProperty('--app-h');
-    root.classList.toggle('fullh', tall);
+    // Round 4: latched. Once .fullh is on, iOS reports the taller page as the viewport, which used to switch .fullh off
+    // again, which made the viewport short again: an endless flip (the tab bar blinked ~40 times a second on the owner's
+    // phone). The decision now stays until the width changes (rotation) or phone mode ends, and nothing is written twice.
+    let tall = H > ih + 0.5;
+    if (latch && latch.iw === iw) { tall = true; H = Math.max(H, latch.H); }
+    else latch = tall ? { iw, H } : null;
+    if (tall) latch.H = H;
+    const key = (tall ? H : 0) + '';
+    if (key !== applied) {
+      applied = key;
+      if (tall) root.style.setProperty('--app-h', H + 'px'); else root.style.removeProperty('--app-h');
+      root.classList.toggle('fullh', tall);
+    }
     if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
     // the tab's panel: 5 phrase rows when the screen allows it, 4 or 3 on a smaller phone (the waveform takes the rest)
     const app = $('#app'), cs = getComputedStyle(app);
     const avail = H - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
     const panel = avail >= 735 ? 316 : avail >= 690 ? 272 : 228;
-    root.style.setProperty('--panel-h', panel + 'px');
+    if (panel !== panelApplied) { panelApplied = panel; root.style.setProperty('--panel-h', panel + 'px'); }
   }
 
   // ---------- Select mode (Phrases tab) ----------
