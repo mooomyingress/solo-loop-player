@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ffLWmeuyA2SsT3VmFJQLZG400byZ9e0bm9/7GVhrtk8='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Fwl7aJ579i2OseF2dNfPxodkLoj8cNTPjYPLq0vbYzY='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -9819,9 +9819,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (latch && latch.iw === iw) { tall = true; H = Math.max(H, latch.H); }
     else latch = tall ? { iw, H } : null;
     if (tall) latch.H = H;
-    const key = (tall ? H : 0) + '';
-    if (key !== applied) {
-      applied = key;
+    // written only when different from what is there (compared with the element, not a remembered value)
+    if (root.style.getPropertyValue('--app-h') !== (tall ? H + 'px' : '') || root.classList.contains('fullh') !== tall) {
       if (tall) root.style.setProperty('--app-h', H + 'px'); else root.style.removeProperty('--app-h');
       root.classList.toggle('fullh', tall);
     }
@@ -9830,7 +9829,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const app = $('#app'), cs = getComputedStyle(app);
     const avail = H - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
     const panel = avail >= 735 ? 316 : avail >= 690 ? 272 : 228;
-    if (panel !== panelApplied) { panelApplied = panel; root.style.setProperty('--panel-h', panel + 'px'); }
+    if (root.style.getPropertyValue('--panel-h') !== panel + 'px') root.style.setProperty('--panel-h', panel + 'px');
   }
 
   // ---------- Select mode (Phrases tab) ----------

@@ -10,7 +10,7 @@
  *   is not intercepted at all (no respondWith): it goes straight to the network and is never cached.
  */
 'use strict';
-const VERSION = '139152a7f1b1';
+const VERSION = 'a7eb0cfe80de';
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 const CACHE = 'slp-shell-' + VERSION;
 const scopeUrl = new URL(self.registration.scope);
