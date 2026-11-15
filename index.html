@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gdq2WwEEygyEudVs4XT58khHVuyDyzCEoVSKRnnbu9c='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-9g0Mt9+6/kI/kG6hXL50o024gEETyiCSiejq37oiBjQ='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -657,10 +657,19 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
     position: fixed; inset: 0; height: var(--app-h, auto); min-width: 0;
     padding: max(6px, var(--sa-t)) max(8px, var(--sa-r)) max(4px, var(--sa-b)) max(8px, var(--sa-l));
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto auto var(--panel-h, 316px) auto;
+    /* round 3: the panel row is the flexible one when height runs short (minmax(0, panel-h): it scrolls inside); the lanes
+       keep at least 160 px (toolbar, overview, bars, a 36 px waveform, phrases) and take whatever is left above that */
+    grid-template-rows: auto minmax(160px, 1fr) auto auto minmax(0, var(--panel-h, 316px)) auto;
     grid-template-areas: "top" "lanes" "transport" "status" "content" "tabs";
     gap: 4px;
   }
+  /* Round 3 (2026-11, owner screenshot: the tab bar cut off at 793 px of 852, an empty band below). The installed iPhone
+     app's layout viewport was 59 px shorter than the screen and WebKit clips a position: fixed box at the layout viewport,
+     even though the web view paints the whole screen. When ui-phone.js finds the screen taller than the viewport it adds
+     .fullh: html and body become the screen height and the app is an ordinary absolute box in that document (not clipped
+     to the layout viewport); the document never scrolls (overflow hidden, and a scroll is reset at once). */
+  html.fullh, html.fullh body { height: var(--app-h); min-height: var(--app-h); }
+  html.fullh .app { position: absolute; top: 0; left: 0; right: 0; bottom: auto; height: var(--app-h); }
   /* the translucent status bar of the installed app: its strip is painted (white clock and battery stay readable) */
   .app::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: var(--sa-t); background: var(--statusbar); z-index: 35; pointer-events: none; }
   .phone-only { display: inline-flex; }
@@ -6364,13 +6373,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *             setClick({beats: fn(t0, t1) → [{t, accent}] | null, volume 0…1, when: 'always'|'turn',
  *                       countIn: fn(s0, pe) → [{t, accent}] | null})   metronome (see "Clicks")
  *             prerender({a, b, ra, rb}, rate)      background render for the cache (e.g. the next ladder speed)
+ *             prerenderSet({a, b, ra, rb}, rates)  queue background renders of the loop's region at these speeds, nearest
+ *                                                  to the current speed first, only as many as fit in the cache cap next to
+ *                                                  the current speed's render (estimated bytes); returns the rates queued or
+ *                                                  already cached. With configure({presetRates}) the engine calls it by
+ *                                                  itself ~0.8 s after a loop becomes active (setLoop, decoded audio, loop on).
  * Transport   play() · pause() · toggle() · seek(t) · restart()
  *             seek(t) outside the current played span clears the range (emits 'range').
  * Reading     time  song seconds of the playhead in every mode (during lead-in too; rests at the played end in a gap,
  *                   moves through the range again during a play-along pass)
  *             span  {start, end}: the song span each pass plays (range + lead-in / lead-out, clamped)
  *             state {playing, inGap, gapKind: null|'silent'|'click', mode: 'media'|'buffer',
- *                    smooth: 'original'|'ready'|'rendering'|'rough', progress, pass}
+ *                    smooth: 'original'|'ready'|'rendering'|'rough', progress, pass,
+ *                    held: null | the speed still heard while the render for a new speed is prepared (see "Speed change")}
  *             stats {rendersStarted, rendersDone, cache: {keys, bytes}, passes: [recent passes], ghosts: [recent gap passes],
  *                    clicks: [recent ticks {at, t, beat, accent, pass, ghost, cancelled?}]} (diagnostics/tests)
  * Clicks      In buffer mode, when a pass (or a ghost pass, see below) is scheduled, a tick is scheduled for every beat
@@ -6407,6 +6422,15 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  * otherwise the pass is an offset into the loop's phase-vocoder render, so sub-ranges never re-render.
  * Mode 'media': the <audio> element (free roaming, loop off, or while a render is pending; rough slowdown), looping
  * from the same tick and from 'timeupdate'. requestAnimationFrame is never used, so background tabs keep looping.
+ * Media seeks are re-asserted: iOS ignores currentTime set before the element has metadata (it does not preload; an
+ * element idle through a long buffer-mode stretch has readyState 0) and then plays from 0. The wanted position is kept,
+ * applied on loadedmetadata / canplay / playing and checked for 2 s on every tick; time() reports it until it took.
+ * Speed change (2026-11, owner report from the iPhone): while buffer playback runs and the new speed's render is not in
+ * the cache, playback does NOT drop to the media element: it HOLDS the source it is playing (the old speed's render, or
+ * the original at 100 %) and keeps looping the same range at the old speed (state.held, the UI says "Preparing…"); when
+ * the render arrives it switches at the current position (in a gap: at the next pass). No media seek is involved, so the
+ * playhead never leaves the phrase. A failed render releases the hold to the rough media fallback. Paused, a loop change
+ * or loop off: no hold (the media fallback as before, with the re-asserted seek).
  */
 (() => {
   'use strict';
@@ -6424,6 +6448,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const RATE_ONE = 0.005;       // |rate − 1| below this plays the original buffer
   const CACHE_BYTES = 250 * 1024 * 1024;
   const RENDER_DEBOUNCE = 300;  // ms; A/B drags and slider moves settle before a render starts
+  const PRESET_DEBOUNCE = 800;  // ms; a loop must stay active this long before its preset speeds are prerendered
 
   // ---------- events ----------
   const listeners = { state: new Set(), pass: new Set(), loaded: new Set(), error: new Set(), range: new Set() };
@@ -6434,9 +6459,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   // ---------- settings ----------
   let loop = { a: 0, b: 0, ra: 0, rb: 0 }, range = null, rate = 1, loopOn = true;
+  let held = null; // the speed still playing while the render for `rate` is prepared (buffer playback only), else null
   const PAD = 4; // default render padding (s) when setLoop gets no region
   const practice = { gap: 0, leadIn: 0, leadOut: 0, gapGrid: false };
-  const cfg = { pvWorkerSource: null, pvWorkerUrl: null, cacheBytes: CACHE_BYTES, decode: true, musicGain: 1 };
+  const cfg = { pvWorkerSource: null, pvWorkerUrl: null, cacheBytes: CACHE_BYTES, decode: true, musicGain: 1, presetRates: [] };
   const click = { beats: null, volume: 0.5, when: 'always', countIn: null };
   const isOne = (r) => Math.abs(r - 1) < RATE_ONE;
   const keyOf = (a, b, r) => a.toFixed(4) + '|' + b.toFixed(4) + '|' + r.toFixed(3);
@@ -6508,7 +6534,43 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     try { audio.preservesPitch = true; } catch (e) { /* older browser */ }
   }
   applyMediaRate();
-  function seekMedia(t) { try { audio.currentTime = t; } catch (e) { /* not ready yet */ } mediaLastT = t; }
+  // The wanted media position: set now if the element can seek, re-applied when metadata / data arrive, and verified on
+  // every tick for SEEK_CHECK ms after it was applied (iOS ignores or undoes a seek on an element without metadata).
+  const SEEK_CHECK = 2000;
+  let mediaWant = null; // {t, at: performance.now() of the request, applied: performance.now() | 0}
+  let seekFixes = 0;    // lost seeks re-asserted (diagnostics / tests)
+  function seekMedia(t) {
+    mediaLastT = t;
+    mediaWant = { t, at: performance.now(), applied: 0 };
+    applyMediaSeek();
+  }
+  function applyMediaSeek() {
+    if (!mediaWant || audio.readyState < 1) return; // HAVE_NOTHING: setting currentTime now is lost on iOS
+    try { audio.currentTime = mediaWant.t; mediaWant.applied = performance.now(); } catch (e) { /* not seekable yet */ }
+  }
+  // Called from the tick / timeupdate: re-assert a seek that did not take (the element sits far from where it should be).
+  function checkMediaSeek() {
+    if (!mediaWant) return;
+    if (audio.readyState < 1) return; // still waiting for metadata (the play() call loads it on iOS)
+    if (!mediaWant.applied) { applyMediaSeek(); return; }
+    const now = performance.now();
+    if (now - mediaWant.applied > SEEK_CHECK) { mediaWant = null; return; }
+    if (audio.seeking) return;
+    const c = audio.currentTime, moved = audio.paused ? 0 : (now - mediaWant.applied) / 1000 * (audio.playbackRate || 1);
+    if (c < mediaWant.t - 0.25 || c > mediaWant.t + moved + 0.75) {
+      try { audio.currentTime = mediaWant.t + moved; } catch (e) { /* retry next tick */ }
+      mediaLastT = mediaWant.t + moved;
+      mediaWant = { t: mediaWant.t + moved, at: mediaWant.at, applied: performance.now() };
+      seekFixes++;
+    }
+  }
+  for (const ev of ['loadedmetadata', 'loadeddata', 'canplay', 'playing']) {
+    audio.addEventListener(ev, () => {
+      if (!mediaWant || (mediaWant.applied && Math.abs(audio.currentTime - mediaWant.t) <= 0.25)) return;
+      if (mediaWant.applied) seekFixes++; // applied before, but the element is elsewhere: the seek was lost
+      applyMediaSeek();
+    });
+  }
 
   let objectUrl = null, fileName = '', peaks = null, decoded = null, loadToken = 0;
   let mode = 'media';
@@ -6533,7 +6595,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const e = cacheGet(loopKey(r));
     return e ? { buf: e.buffer, base: e.a, rate: e.rate, kind: 'render' } : null;
   }
-  const canBuffer = () => loopOn && !!sourceFor(rate);
+  // What buffer playback plays: the current speed's source, or the held one while its render is prepared.
+  const curSrc = () => sourceFor(rate) || (held != null ? sourceFor(held) : null);
+  const canBuffer = () => loopOn && !!curSrc();
 
   // Metronome ticks for the grid beats a pass covers, song time [s0, pe), each at the context time the
   // pass reaches that beat. Only ticks later than `after` (context time) are added.
@@ -6579,7 +6643,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
 
   function schedulePass(when, s0) {
-    const src = sourceFor(rate);
+    const src = curSrc();
     const { pa, pb, end, start } = bounds();
     const off = Math.max(0, (s0 - src.base) / src.rate);
     const full = (end - s0) / src.rate;
@@ -6682,7 +6746,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     bufPlaying = true;
     const { end, start } = bounds();
     const when = c.currentTime + SAFE;
-    if (continuous) s0 += Math.max(0, when - audibleNow()) * sourceFor(rate).rate;
+    if (continuous) s0 += Math.max(0, when - audibleNow()) * curSrc().rate;
     if (s0 >= end - END_TOL) s0 = start;
     schedulePass(when, s0).continuous = !!continuous;
     ticker.start();
@@ -6713,7 +6777,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (!passes.length && pendingWhen === null) return;
       const when = nextWhen();
       if (when > now + LOOKAHEAD) return;
-      if (!sourceFor(rate)) {
+      if (!curSrc()) {
         // e.g. a speed change at the boundary whose render is not ready: media takes over there
         if (now >= when - TICK_MS / 2000) toMedia(bounds().start, true);
         return;
@@ -6779,6 +6843,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   function checkLoop() {
     if (mode !== 'media') return;
+    checkMediaSeek();
     if (mediaGapUntil) {
       if (performance.now() >= mediaGapUntil) { mediaGapUntil = 0; wrapMedia(); }
       return;
@@ -6830,8 +6895,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   // ---------- engine decisions ----------
   // After any change (speed, loop, loop on/off, render finished): pick the mode, request renders.
+  // The hold ends when the render arrived (switch at the current position; in a gap the next pass takes the new speed),
+  // when it failed (rough media fallback), or when buffer playback stopped.
+  function releaseHold() {
+    held = null;
+    if (mode !== 'buffer' || !bufPlaying) return;
+    if (bufferGap()) { dropFuture(); return; }
+    const t = bufferTime(), lo = lowEdge();
+    if (canBuffer() && t >= lo - A_TOL && t < bounds().end) startPasses(Math.max(t, lo), true);
+    else toMedia(t, true);
+  }
   function sync() {
     if (!objectUrl) { emitState(); return; }
+    if (held != null && (sourceFor(rate) || failed.has(loopKey(rate)) || !sourceFor(held) || !loopOn || mode !== 'buffer' || !bufPlaying)) releaseHold();
     if (loopOn && decoded && !isOne(rate)) requestNeeded();
     const ok = canBuffer();
     if (mode === 'buffer') {
@@ -6856,7 +6932,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
 
   function isPlaying() { return mode === 'buffer' ? bufPlaying : (!audio.paused || !!mediaGapUntil); }
-  function time() { return mode === 'buffer' ? bufferTime() : (audio.currentTime || 0); }
+  function time() {
+    if (mode === 'buffer') return bufferTime();
+    if (mediaWant && (audio.readyState < 1 || !mediaWant.applied)) return mediaWant.t; // the seek has not reached the element yet
+    return audio.currentTime || 0;
+  }
   function duration() { return (isFinite(audio.duration) && audio.duration) || (decoded && decoded.duration) || 0; }
 
   function play() {
@@ -6879,6 +6959,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       audio.pause();
     }
     ticker.stop();
+    if (held != null) { held = null; sync(); } // paused while holding: the next Play uses the current speed's path
     emitState();
   }
   function toggle() { if (isPlaying()) pause(); else play(); }
@@ -6915,9 +6996,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const ra = l.ra != null ? Math.min(l.ra, l.a) : l.a - PAD, rb = l.rb != null ? Math.max(l.rb, l.b) : l.b + PAD;
     if (l.a === loop.a && l.b === loop.b && ra === loop.ra && rb === loop.rb) return;
     loop = { a: l.a, b: l.b, ra, rb };
+    held = null; // the held render belongs to the old region
     if (range && (range.a < loop.a - A_TOL || range.b > loop.b + A_TOL)) { range = null; emit('range', null); }
     resetCount();
     resync();
+    schedulePresets();
   }
   function setRange(r, opts) {
     const now = !!(opts && opts.now);
@@ -6946,8 +7029,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function setRate(r, opts) {
     r = Math.min(1.1, Math.max(0.4, Number(r) || 1));
     if (r === rate) return;
+    const before = mode === 'buffer' && bufPlaying && loopOn ? curSrc() : null; // what is heard right now
     rate = r;
     applyMediaRate();
+    held = null;
+    if (before && !sourceFor(rate)) {
+      // Render pending: keep looping the same range from the source that plays (no media fallback, no seek), at the
+      // old speed, until the render is ready (sync → releaseHold). Nothing audible changes now.
+      held = before.rate;
+      if (mode === 'buffer' && bufPlaying) dropFuture(); // passes not yet started are rebuilt (gap lengths may follow the speed)
+      sync();
+      return;
+    }
     // In a gap (silent, or the play-along pass) nothing of the recording is sounding: the new speed starts
     // with the next recording pass instead of restarting the music mid-range inside the gap.
     if (((opts && opts.atBoundary) || bufferGap()) && mode === 'buffer' && bufPlaying) {
@@ -6959,8 +7052,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   function setLoopOn(v) {
     loopOn = !!v;
-    if (!loopOn) mediaGapUntil = 0;
+    if (!loopOn) { mediaGapUntil = 0; held = null; }
     resync();
+    if (loopOn) schedulePresets();
   }
   // leadIn / leadOut: seconds added before / after the range on every pass. Negative values trim
   // (fit to the metre can move a start that lies a few ms before a grid line onto it).
@@ -7008,10 +7102,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function cachePut(e) {
     cache.set(e.key, e);
     cacheBytes += e.bytes;
-    const inUse = loopKey(rate);
+    const inUse = loopKey(rate), heldKey = held != null ? loopKey(held) : null;
     for (const [k, v] of [...cache]) {
       if (cacheBytes <= cfg.cacheBytes) break;
-      if (k === e.key || k === inUse) continue;
+      if (k === e.key || k === inUse || k === heldKey) continue;
       cache.delete(k);
       cacheBytes -= v.bytes; // passes still playing keep their own reference to the AudioBuffer
     }
@@ -7060,6 +7154,38 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     queue.push({ key, a: g.a, b: g.b, rate: r, needed: false });
     pump();
   }
+  // Bytes of a region render at speed r (Float32, at most two channels).
+  function estBytes(g, r) { return Math.max(1, Math.round((g.b - g.a) * decoded.sampleRate / r)) * Math.min(2, decoded.numberOfChannels) * 4; }
+  function prerenderSet(l, rates) {
+    if (!decoded || !l || !(l.b > l.a)) return [];
+    const g = regionOf(l), same = (k) => k.startsWith(g.a.toFixed(4) + '|' + g.b.toFixed(4) + '|');
+    // prerenders queued for another region (an earlier loop) are dropped; the needed render and this region's stay
+    queue = queue.filter((j) => j.needed || same(j.key));
+    const cr = region(), isCur = cr.a === g.a && cr.b === g.b; // the active loop's region (its render plays)
+    let budget = cfg.cacheBytes;
+    if (isCur && !isOne(rate)) budget -= estBytes(g, rate);           // the current speed's render must fit (playing)
+    if (isCur && held != null && !isOne(held)) budget -= estBytes(g, held);
+    const list = [...new Set((rates || []).map((r) => Math.round(Math.min(1.1, Math.max(0.4, Number(r) || 1)) * 1000) / 1000))]
+      .filter((r) => !isOne(r) && !(isCur && (r === rate || r === held)))
+      .sort((x, y) => Math.abs(x - rate) - Math.abs(y - rate) || y - x);
+    const out = [];
+    if (isCur && !isOne(rate)) out.push(rate);
+    for (const r of list) {
+      const b = estBytes(g, r);
+      if (b > budget) continue; // would push the playing render (or a nearer speed) out of the cache
+      budget -= b;
+      out.push(r);
+      prerender(l, r);
+    }
+    lastPresets = { region: g, rates: out, budget };
+    return out;
+  }
+  let presetTimer = null, lastPresets = null;
+  function schedulePresets() {
+    clearTimeout(presetTimer);
+    if (!cfg.presetRates || !cfg.presetRates.length) return;
+    presetTimer = setTimeout(() => { presetTimer = null; if (loopOn && decoded && loop.b > loop.a) prerenderSet(loop, cfg.presetRates); }, PRESET_DEBOUNCE);
+  }
   function enqueue(spec) {
     if (spec.key !== neededKey || cache.has(spec.key)) return;
     // outdated "needed" requests go; prerenders stay queued
@@ -7075,7 +7201,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function renderFailed(key) {
     if (key) failed.add(key);
     killWorker();
-    emit('error', { kind: 'render', message: 'Smooth slowdown failed to render; using the browser slowdown instead.' });
+    // a background prerender (another speed) that fails says nothing: only the speed being played is reported
+    if (!key || key === loopKey(rate)) emit('error', { kind: 'render', message: 'Smooth slowdown failed to render; using the browser slowdown instead.' });
   }
   function pump() {
     if (job || !decoded) return;
@@ -7126,7 +7253,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     else { smooth = 'rendering'; progress = job && job.key === key ? job.progress : 0; }
     const gapKind = mode === 'buffer' ? bufferGap() : (mediaGapUntil ? (practice.gap === 'click' ? 'click' : 'silent') : null);
     const inGap = !!gapKind;
-    return { playing: isPlaying(), inGap, gapKind, mode, smooth, progress: Math.round(progress * 100) / 100, pass: mode === 'buffer' ? heard : count };
+    return { playing: isPlaying(), inGap, gapKind, mode, smooth, progress: Math.round(progress * 100) / 100, pass: mode === 'buffer' ? heard : count,
+      held: held != null && mode === 'buffer' && bufPlaying ? held : null };
   }
   function emitState() {
     const s = computeState();
@@ -7178,6 +7306,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     killWorker();
     clearTimeout(renderTimer); renderTimer = null;
     queue = []; neededKey = null; failed.clear(); cacheClear();
+    held = null; mediaWant = null; clearTimeout(presetTimer); presetTimer = null; lastPresets = null;
     decoded = null; peaks = null; fileName = ''; mode = 'media'; pausedAt = 0;
     resetCount();
     emitState();
@@ -7191,7 +7320,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     fileName = file.name || 'audio file';
     audio.src = objectUrl;
     applyMediaRate();
-    audio.addEventListener('loadedmetadata', () => { if (token === loadToken && mode === 'media') seekMedia(loop.a); }, { once: true });
+    // first metadata: the loop start, unless a seek was asked for meanwhile (then the generic handler re-applies that one)
+    audio.addEventListener('loadedmetadata', () => { if (token === loadToken && mode === 'media' && !mediaWant) seekMedia(loop.a); }, { once: true });
     if (cfg.decode) {
       try {
         const ab = await getCtx().decodeAudioData(await file.arrayBuffer());
@@ -7220,6 +7350,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const expect = opts && opts.expectDuration;
     emit('loaded', { name: fileName, duration: d, decoded: !!decoded, durationMismatch: !!(expect && d && Math.abs(d - expect) > 1) });
     sync();
+    schedulePresets();
     return true;
   }
   // Resolves true once the media element has metadata, false on a media error (or after 8 s without either).
@@ -7277,7 +7408,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     get duration() { return duration(); },
     get peaks() { return peaks; },
     get pcm() { return decoded ? { sr: decoded.sampleRate, length: decoded.length, channels: Math.min(2, decoded.numberOfChannels), slice } : null; },
-    setLoop, setRange, setRate, setLoopOn, setPractice, setClick, prerender, scrubSnippet, scrubStop,
+    setLoop, setRange, setRate, setLoopOn, setPractice, setClick, prerender, prerenderSet, scrubSnippet, scrubStop,
     play, pause, toggle, seek, restart,
     get time() { return time(); },
     get state() { return computeState(); },
@@ -7285,7 +7416,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     get span() { const b = bounds(); return { start: b.start, end: b.end }; },
     get region() { return region(); },
     get stats() { return { rendersStarted: stats.rendersStarted, rendersDone: stats.rendersDone, cache: { keys: [...cache.keys()], bytes: cacheBytes }, passes: passLog.slice(),
-      ghosts: ghostLog.slice(), clicks: clickLog.slice(), scrubSnippets: scrubCount, scrubLive: scrubNodes.size }; },
+      ghosts: ghostLog.slice(), clicks: clickLog.slice(), scrubSnippets: scrubCount, scrubLive: scrubNodes.size,
+      queue: queue.map((j) => j.key), job: job ? { key: job.key, needed: !!job.needed } : null, presets: lastPresets, presetPending: !!presetTimer, seekFixes,
+      cacheCap: cfg.cacheBytes }; },
     get ctx() { return ctx; },
     get output() { getCtx(); return master; },
     on,
@@ -9542,8 +9675,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  * phone mode puts them back exactly where they were.
  *   select(on)         Select mode of the Phrases tab (a tap on a phrase extends the selection like Shift-click; long press on
  *                      a row turns it on); selUpdate(v) refreshes the selection bar from the page's model
- *   measure()          full-screen sizing (--app-h, --panel-h) on resize / orientationchange / pageshow / visualViewport A tap on a greyed
- * control shows its explanation (its title) on the status line, since a touch screen has no hover tooltips.
+ *   measure()          full-screen sizing (--app-h, --panel-h, html.fullh) on resize / orientationchange / pageshow /
+ *                      visibilitychange / visualViewport and 0.12 / 0.5 / 1.5 s after each (iOS launch heights are wrong)
+ * A tap on a greyed control shows its explanation (its title) on the status line, since a touch screen has no hover tooltips.
  */
 (() => {
   'use strict';
@@ -9666,7 +9800,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // to the screen. Elsewhere (Safari tab, desktop emulation) nothing is set and `position: fixed; inset: 0` does the job.
   function measure() {
     const root = document.documentElement;
-    if (!on) { root.style.removeProperty('--app-h'); root.style.removeProperty('--panel-h'); return; }
+    if (!on) { root.style.removeProperty('--app-h'); root.style.removeProperty('--panel-h'); root.classList.remove('fullh'); return; }
     const standalone = navigator.standalone === true || (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches);
     const vv = window.visualViewport;
     const iw = window.innerWidth, ih = window.innerHeight;
@@ -9675,7 +9809,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const sh = ih >= iw ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
       if (sh > H && sh - H <= 160) H = sh;
     }
-    if (H > ih + 0.5) root.style.setProperty('--app-h', H + 'px'); else root.style.removeProperty('--app-h');
+    // Round 3: the app box must not stay position: fixed when it is taller than the layout viewport (WebKit clips it there,
+    // the owner's tab bar was cut at 793 of 852 px): .fullh makes html / body the screen height and the app absolute.
+    const tall = H > ih + 0.5;
+    if (tall) root.style.setProperty('--app-h', H + 'px'); else root.style.removeProperty('--app-h');
+    root.classList.toggle('fullh', tall);
+    if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
     // the tab's panel: 5 phrase rows when the screen allows it, 4 or 3 on a smaller phone (the waveform takes the rest)
     const app = $('#app'), cs = getComputedStyle(app);
     const avail = H - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
@@ -9817,8 +9956,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const m = $('#phMoreMenu');
       if (!m.hidden && !m.contains(e.target) && !$('#phMore').contains(e.target)) moreMenu(false);
     });
-    for (const t of ['resize', 'orientationchange', 'pageshow']) window.addEventListener(t, measure);
+    // iOS reports wrong heights while an installed app launches or comes back: measure on every hint and again shortly after
+    const later = () => { measure(); for (const ms of [120, 500, 1500]) setTimeout(measure, ms); };
+    for (const t of ['resize', 'orientationchange', 'pageshow']) window.addEventListener(t, later);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') later(); });
     if (window.visualViewport) visualViewport.addEventListener('resize', measure);
+    // the document is never scrolled (html.fullh is taller than the layout viewport): a scroll iOS makes anyway is undone
+    window.addEventListener('scroll', () => { if (on && (window.scrollY || window.scrollX)) window.scrollTo(0, 0); }, { passive: true });
+    setTimeout(later, 0);
     document.addEventListener('touchend', greyTap, true);
     document.addEventListener('pointerup', greyTap, true);
     tab(U.prefs.get('phoneTab') || 'loops');
@@ -10501,7 +10646,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (!E.hasAudio) return '';
     if (st.smooth === 'original') return 'Original speed';
     if (st.smooth === 'ready') return st.mode === 'buffer' ? 'Smooth' : 'Smooth from loop start';
-    if (st.smooth === 'rendering') return 'Preparing… ' + Math.round(st.progress * 100) + '%';
+    // a speed change whose render is pending keeps looping at the old speed (engine hold): say which speed is heard
+    if (st.smooth === 'rendering') return 'Preparing… ' + Math.round(st.progress * 100) + '%' + (st.held != null ? ' · ' + Math.round(st.held * 100) + '% for now' : '');
     return s.loopOn ? (E.peaks ? 'Rough slowdown' : 'Rough slowdown (not decoded)') : 'Rough slowdown (loop off)';
   }
 
@@ -11156,6 +11302,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   $('#rate').addEventListener('input', (e) => rateUser(Number(e.target.value) / 100));
   $('#rate').addEventListener('change', (e) => e.target.blur());
   $('#presets').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) rateUser(Number(b.dataset.rate) / 100); });
+  // The speed buttons are the speeds the user jumps between mid-practice: the engine prerenders them for every loop that
+  // becomes active (nearest to the current speed first, only what fits in the render cache), so a change rarely waits.
+  E.configure({ presetRates: [...document.querySelectorAll('#presets button')].map((b) => Number(b.dataset.rate) / 100).filter((r) => r > 0 && r !== 1) });
 
   // ---------- bindings: practice row ----------
   const blurAfter = (el, fn) => el.addEventListener('change', (e) => { fn(e.target.value); e.target.blur(); });
