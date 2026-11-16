@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Cv2kcwrE8AwhBgU4cvWOstOz0ygsZ6h5OKJXwJn00o4='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hPwwLYpIqEg9e0cIflTLzDkoWb1v9cOcmpwe7ivgKCo='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -564,6 +564,14 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   html:not(.is-phone) .pic-box.ph { height: 60px; }
   html:not(.is-phone) .pic-box.lp { height: 52px; }
   html:not(.is-phone) .insp { gap: 5px; padding-top: 4px; padding-bottom: 4px; }
+  /* the Landing row shares the Window row's line (its text cut with an ellipsis, the whole text in its title) */
+  html:not(.is-phone) .wl-pair { display: flex; align-items: center; gap: 10px; }
+  html:not(.is-phone) .wl-pair > .winrow { flex: 0 1 auto; max-width: 58%; min-width: 0; overflow: hidden; }
+  html:not(.is-phone) .wl-pair > .landrow > .wl { display: none; } /* "lands on D · 3 …" says what it is */
+  html:not(.is-phone) .wl-pair #phLandFix { flex: none; }
+  html:not(.is-phone) .wl-pair > .winrow .chips { min-width: 0; overflow: hidden; flex-wrap: nowrap; }
+  html:not(.is-phone) .wl-pair > .landrow { flex: 1 1 0; min-width: 0; }
+  html:not(.is-phone) .wl-pair > .landrow .spacer { display: none; }
 }
 
 /* status */
@@ -634,6 +642,24 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
 .insp.ear { gap: 7px; }
 .ear-on { display: grid; gap: 7px; align-content: start; min-width: 0; }
 .ear-on > .ear-q { order: -1; }
+.ear-on > .ear-drill-row { order: -2; }
+.landrow .land-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-variant-numeric: tabular-nums; }
+.landrow .land-t.muted { color: var(--muted); }
+.land-box { display: grid; gap: 6px; }
+.wl-pair { display: grid; gap: inherit; min-width: 0; }
+.phrases .row .land { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; margin-left: 6px; }
+.phrases .row .land.skip { color: var(--faint); }
+#earOn[data-drill="landing"] .ear-only-a, #earOn[data-drill="degree"] .ear-only-l { display: none; }
+.ear-prompt.off { color: var(--warn); }
+#earOn[data-drill="landing"] .ear-prompt.revealed { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+.ear-a.also { box-shadow: inset 0 0 0 2px var(--phrase); border-color: var(--phrase); }
+.ear-fix { display: grid; gap: 6px; justify-items: start; }
+#earFixBtn { gap: 5px; }
+#earFixBtn .car { width: 8px; height: 8px; fill: currentColor; opacity: 0.7; transition: transform 0.12s; }
+#earFixBtn[aria-expanded="true"] .car { transform: rotate(180deg); }
+.ear-fix-box { display: grid; gap: 6px; width: 100%; }
+.ear-fix-acts { display: flex; gap: 5px; flex-wrap: wrap; }
+.fix-chip b { font-weight: 600; color: var(--ink); }
 .ear-off { display: grid; gap: 8px; justify-items: start; }
 .ef { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; row-gap: 5px; min-width: 0; }
 .ef > .lbl:first-child { width: 58px; flex: none; text-align: right; }
@@ -914,7 +940,13 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .ef .ef-gap { margin-left: 0; }
   .ef .seg { flex: 1 1 auto; min-width: 0; }
   .ef .seg > button { flex: 1 1 0; justify-content: center; padding: 0 6px; font-size: 14px; }
-  #earSing { flex: 1 1 100%; justify-content: center; }
+  #earSing, #earUnsure { flex: 1 1 100%; justify-content: center; }
+  .ear-drill-row > .lbl:first-child { display: none; }
+  #earOn.running > .ear-drill-row { display: none; } /* while a drill runs the question card's title names it: the answers stay in view */
+  .ear-drill-row .seg { flex: 1 1 100%; }
+  .ear-drill-row .seg > button { font-size: 14px; min-height: 44px; }
+  .ear-fix-acts button, #earFixBtn { min-height: 44px; }
+  .ear-fix-acts button { flex: 1 1 0; justify-content: center; }
   #earLead, #earQuiet { flex: 1 1 0; justify-content: center; }
   .ear-lvl input[type="range"] { flex: 1 1 auto; width: auto; min-width: 0; }
   .ear-lvl .num { font-size: 14px; align-self: center; }
@@ -1398,10 +1430,16 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
           <div class="edgecol end"><div class="eh"><b><svg class="ic teal" aria-hidden="true"><use href="#i-flagB"/></svg>End</b><span class="mus" id="phMusB"></span></div><div class="ctl" data-edge="ph-b"></div></div>
         </div>
         <div class="steplegend" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chevL"/></svg><svg class="ic" aria-hidden="true"><use href="#i-chevR"/></svg> 0.01 s<span class="big"> &nbsp;·&nbsp; <svg class="ic" aria-hidden="true"><use href="#i-dchevL"/></svg><svg class="ic" aria-hidden="true"><use href="#i-dchevR"/></svg> 0.10 s</span><span class="nb"> &nbsp;·&nbsp; Shift: 0.10 s</span></div>
+        <div class="wl-pair">
         <div class="winrow"><span class="wl"><svg class="ic amber" aria-hidden="true"><use href="#i-window"/></svg>Window</span><span class="chips" id="phWin"></span><span class="spacer"></span>
           <button type="button" class="phone-only" id="phWinL" title="Slide the window one beat earlier (,)" aria-label="Slide the window one beat earlier">‹ Beat</button>
           <button type="button" class="phone-only" id="phWinR" title="Slide the window one beat later (.)" aria-label="Slide the window one beat later">Beat ›</button>
           <button type="button" id="phWinReset" title="Put the window back where Start places it (shift 0)"><svg class="ic" aria-hidden="true"><use href="#i-reset"/></svg>Reset</button></div>
+        <div class="winrow landrow"><span class="wl"><svg class="ic" aria-hidden="true"><use href="#i-ear"/></svg>Landing</span><span class="land-t" id="phLand">–</span><span class="spacer"></span>
+          <button type="button" id="phLandFix" aria-expanded="false" aria-controls="phLandBox" title="Kelly's last note of this phrase is wrong: choose the real one (stored on the phrase, synced, Cmd+Z undoes it)">Fix…</button></div>
+        </div>
+        <div class="land-box" id="phLandBox" hidden><span class="ear-chips" id="phLandChips" role="group" aria-label="The phrase's real last note (any octave)"></span>
+          <span class="ear-fix-acts"><button type="button" id="phLandSkip" aria-pressed="false" title="Never ask this phrase in the landing drill">Skip in the drill</button><button type="button" id="phLandAuto" hidden title="Forget the correction: back to the automatic note">Automatic</button></span></div>
       </div>
       <div class="insp" id="tabGrid" role="tabpanel" hidden>
         <div id="gridNone">
@@ -1465,7 +1503,27 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
           <div><button type="button" id="earToGrid"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Open the Grid tab</button></div>
         </div>
         <div class="ear-on" id="earOn">
-          <div class="ef"><span class="lbl" id="earCtxLbl">Context</span>
+          <div class="ef ear-drill-row"><span class="lbl" id="earDrillLbl">Drill</span>
+            <span class="seg" id="earDrill" role="radiogroup" aria-labelledby="earDrillLbl" title="Which ear drill">
+              <button type="button" role="radio" aria-checked="false" data-v="landing" title="Kelly's landing note: a phrase of the recording stops right after its last note; sing it and name its degree over the chord">Kelly's landing note</button><button type="button" role="radio" aria-checked="false" data-v="degree" title="Degree over the chord: a bar of the chord, then a synthesised note; name its degree">Degree over the chord</button>
+            </span>
+          </div>
+          <div class="ef ear-only-l"><span class="lbl" id="earFromLbl">From</span>
+            <span class="seg" id="earFrom" role="radiogroup" aria-labelledby="earFromLbl" title="Which phrases are asked">
+              <button type="button" role="radio" aria-checked="false" data-v="loop" title="The phrases of the loop selected now">This loop</button><button type="button" role="radio" aria-checked="false" data-v="form" title="The phrases of every loop inside the form (a note found in two loops counts once)">All loops in the form</button>
+            </span>
+            <span class="grp ef-gap"><span class="lbl" id="earPlayLbl">Play</span>
+            <span class="seg" id="earPlay" role="radiogroup" aria-labelledby="earPlayLbl" title="How much of the phrase plays before the stop">
+              <button type="button" role="radio" aria-checked="false" data-v="phrase" title="The whole phrase, from its first note to its last">Whole phrase</button><button type="button" role="radio" aria-checked="false" data-v="bar" title="Only the last bar of the phrase (up to its last note)">Last bar</button>
+            </span></span>
+          </div>
+          <div class="ef ear-only-l"><span class="lbl" id="earAfterLbl">After</span>
+            <span class="seg" id="earAfter" role="radiogroup" aria-labelledby="earAfterLbl" title="After the stop">
+              <button type="button" role="radio" aria-checked="false" data-v="silence" title="Silence after the stop: sing the note with nothing to lean on">Silence</button><button type="button" role="radio" aria-checked="false" data-v="echo" title="Echo the note: the detected note as a tuned tone after the stop">Echo the note</button>
+            </span>
+            <button type="button" id="earUnsure" class="ef-gap" aria-pressed="false" title="Include unsure notes: also ask notes the detector is unsure of (normally only clear ones and the ones you checked)">Include unsure notes</button>
+          </div>
+          <div class="ef ear-only-a"><span class="lbl" id="earCtxLbl">Context</span>
             <span class="seg" id="earCtx" role="radiogroup" aria-labelledby="earCtxLbl" title="What sounds under the note: a bar of the recording, or a synthesised bar of the chord at the grid's tempo">
               <button type="button" role="radio" aria-checked="false" data-v="song" title="Song: one bar of the recording where the chart has this chord, at 100 % speed (without audio: Comp)">Song</button><button type="button" role="radio" aria-checked="false" data-v="comp" title="Comp: bass root on 1 and 3, the 3rd and 7th on 2 and 4, slightly swung">Comp</button><button type="button" role="radio" aria-checked="false" data-v="drone" title="Drone: the root and the 3rd and 7th held">Drone</button>
             </span>
@@ -1473,9 +1531,8 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
             <span class="seg" id="earNote" role="radiogroup" aria-labelledby="earNoteLbl" title="When the note sounds">
               <button type="button" role="radio" aria-checked="false" data-v="beat3" title="On beat 3: the chord keeps playing under the note">On beat 3</button><button type="button" role="radio" aria-checked="false" data-v="after" title="After the bar: the bar stops, the note alone over the chord held quietly">After the bar</button>
             </span></span>
-            <button type="button" id="earSing" class="ef-gap" aria-pressed="true" title="Sing first: after the note, a silent count of 2 beats (the click on the even beats when Click is on) to sing down to the root before the answers open">Sing first</button>
           </div>
-          <div class="ef" id="earSongRow"><span class="lbl">Song</span>
+          <div class="ef ear-only-a" id="earSongRow"><span class="lbl">Song</span>
             <button type="button" id="earLead" aria-pressed="false" title="Lead-in: the recording starts one beat before the bar line">Lead-in</button>
             <span class="grp ef-gap ear-lvl"><label class="lbl" for="earLevel">Level</label><input type="range" id="earLevel" min="-30" max="0" step="1" value="-6" title="The recording's level under the note (0 dB = as loud as loop playback)"><span class="num" id="earLevelV">−6 dB</span></span>
             <button type="button" id="earQuiet" class="ef-gap" aria-pressed="true" title="Prefer quiet bars: choose among the matching bars with the fewest detected phrases (where the soloist rests); bars without detected phrases come after them">Prefer quiet bars</button>
@@ -1485,15 +1542,16 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
             <span class="grp ear-tune-adj"><button type="button" id="earTuneDown" title="One cent lower (the drill sounds; switches to set by hand)" aria-label="One cent lower">−1</button><input type="range" id="earTune" min="-50" max="50" step="1" value="0" aria-labelledby="earTuneLbl" title="The recording's tuning in cents from A = 440: every drill sound follows it (dragging switches to set by hand)"><button type="button" id="earTuneUp" title="One cent higher (the drill sounds; switches to set by hand)" aria-label="One cent higher">+1</button></span>
             <span class="grp ef-gap ear-tune-acts"><button type="button" id="earTuneAuto" title="Back to the tuning measured from the recording">Auto</button><button type="button" id="earTuneCheck" title="Check by ear: the chord's root as a held tone for 2 s over a bar of the recording under that chord">Check</button></span>
           </div>
-          <div class="ef"><span class="lbl">Chords</span><span class="ear-chips" id="earChords" role="group" aria-label="Chords drilled"></span></div>
+          <div class="ef ear-only-a"><span class="lbl">Chords</span><span class="ear-chips" id="earChords" role="group" aria-label="Chords drilled"></span></div>
           <div class="ef"><span class="lbl" id="earSetLbl">Answers</span>
             <span class="seg" id="earSet" role="radiogroup" aria-labelledby="earSetLbl" title="Which degrees can be asked (and answered)">
               <button type="button" role="radio" aria-checked="false" data-v="chordTones" title="Chord tones: the chord's own tones (dominant 1 3 5 b7)">Chord tones</button><button type="button" role="radio" aria-checked="false" data-v="colour" title="Colour: chord tones + 9 and 13 (6 on major), + #9/b3 on a dominant (the blues note)">Colour</button><button type="button" role="radio" aria-checked="false" data-v="all" title="All 12 degrees">All</button><button type="button" role="radio" aria-checked="false" data-v="custom" title="Custom: choose the degrees">Custom</button>
             </span>
+            <button type="button" id="earSing" class="ef-gap" aria-pressed="true" title="Sing first: after the note (or the stop), a silent count of 2 beats to sing before the answers open (drill A: the click on the even beats when Click is on)">Sing first</button>
           </div>
           <div class="ef" id="earCustomRow" hidden><span class="lbl"></span><span class="ear-chips" id="earCustom" role="group" aria-label="Custom answer set"></span></div>
           <div class="ear-q">
-            <div class="ear-qh"><span class="chip lead ear-t"><svg class="ic" aria-hidden="true"><use href="#i-ear"/></svg>Degree over the chord</span>
+            <div class="ear-qh"><span class="chip lead ear-t"><svg class="ic" aria-hidden="true"><use href="#i-ear"/></svg><span id="earTitleT">Degree over the chord</span></span>
               <span class="ear-prompt" id="earPrompt" role="status" aria-live="polite"></span>
               <button type="button" id="earStart" class="primary">Start</button></div>
             <div class="ear-ans" id="earAns" role="group" aria-label="Answer: the note's degree over the chord"></div>
@@ -1502,6 +1560,13 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
               <button type="button" id="earContext" title="The bar of the chord again, without the note (Space)">Chord again<kbd>Space</kbd></button>
               <button type="button" id="earHear" title="Hear it: the root, then the note, then both (H)">Hear it<kbd>H</kbd></button>
               <button type="button" id="earNext" title="Next question (Enter)">Next<kbd>Enter</kbd></button>
+            </div>
+            <div class="ear-fix" id="earFixRow" hidden>
+              <button type="button" id="earFixBtn" class="quiet" aria-expanded="false" aria-controls="earFix" title="The detected note is wrong: choose Kelly's real note, or never ask this phrase again">Not right? Fix it<svg class="car" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5h7L5 7.5z"/></svg></button>
+              <div class="ear-fix-box" id="earFix" hidden>
+                <span class="ear-chips" id="earFixChips" role="group" aria-label="Kelly's real note (any octave)"></span>
+                <span class="ear-fix-acts"><button type="button" id="earFixSkip" title="Never ask this phrase in the landing drill (stored on the phrase; Cmd+Z undoes it)">Skip this phrase always</button><button type="button" id="earFixAuto" hidden title="Forget your correction: back to the automatic note">Use the automatic note</button></span>
+              </div>
             </div>
           </div>
           <div class="ef"><span class="lbl" id="earToneLbl">Sound</span>
@@ -4494,6 +4559,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   songBars(grid, chord, { duration }) → the bars (or half bars) of the chart holding chord, inside the form (Song context)
  *   barActivity(seg, loops)  → fraction of the segment covered by detected phrases (0…1) | null (unknown)
  *   pickBar(cands, { rng, last, quiet, margin }) → the bar for a question (no immediate repeat; quiet bars preferred)
+ *   landingChord(grid, t, { within }) → the chord under a landing note, with the anticipation rule (Kelly's landing note)
+ *   landingQuestion(lc, pc) · landingAccepts(q, answered) · pickLanding(cands, o) · eligibleLanding(c, o)
  *   KEY_DEGREES              the drill keys: digit → natural degree, Shift+digit → the flat one, Alt+4 → #11
  *   pcName(pc, sharps) · noteName(midi, sharps)  'Bb' · 'Bb3'
  */
@@ -4766,12 +4833,87 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return pool[Math.min(pool.length - 1, Math.floor(R() * pool.length))];
   }
 
+  // ---------- Kelly's landing note (the landing-note drill) ----------
+  // landingChord(grid, t, { within }) → { chord, coming, primary, change, beat, anticipation } | null
+  //   chord = the chart chord sounding at t (gridHelpers.chordAt); the next chord change = the next part of a split cell, or
+  //   the bar line when the next bar's first chord differs (normalised symbols). A note whose attack lies within `within`
+  //   beats (default ANTICIPATION = 0.75) before that change ANTICIPATES it: coming = the next chord, primary = coming
+  //   (the reveal shows both). Otherwise coming = null and primary = chord. null without a readable chord at t.
+  //   (0.75 beat, not 0.5: the "and" of 4 lands 0.33 beat before the bar line swung and 0.5 straight, and the detector's
+  //   onset estimate is a little early by design; the study's phrase 16 of chorus 2 is 0.61 beat before bar 1.)
+  const ANTICIPATION = 0.75;
+  function landingChord(grid, t, o) {
+    const GH = SLP.beats && SLP.beats.gridHelpers;
+    if (!grid || !GH || !grid.bars || grid.bars.length < 2 || !isFinite(t)) return null;
+    const within = o && typeof o.within === 'number' ? o.within : ANTICIPATION;
+    const c = GH.chordAt(grid, t);
+    if (!c.current || !parseChord(c.current)) return null;
+    const bpb = Math.max(1, Math.round(grid.beatsPerBar || 4)), beat = (c.end - c.start) / bpb;
+    let change, next;
+    if (c.part + 1 < c.parts.length) { change = c.start + c.parts[c.part + 1].beat * beat; next = c.parts[c.part + 1].chord; }
+    else { change = c.end; const n = GH.chordAt(grid, c.end + 1e-6); next = n.inForm === false ? '' : n.current; }
+    const differs = !!next && !!parseChord(next) && symKey(next) !== symKey(c.current);
+    const anticipation = differs && change - t <= within * beat + 1e-9 && change > t;
+    return { chord: parseChord(c.current).symbol, coming: anticipation ? parseChord(next).symbol : null, primary: anticipation ? parseChord(next).symbol : parseChord(c.current).symbol,
+      change, beat, anticipation, barInChorus: c.barInChorus, formChorus: c.formChorus };
+  }
+  // landingQuestion(lc, pc) → the question about a landing note of pitch class pc over landingChord's result lc:
+  //   { chord: primary symbol, root, semis (over the primary chord), label, note, sharps, other: null | { chord, semis, label } }
+  //   other = the same note over the chord sounding at the attack, when the note anticipates the coming chord.
+  function landingQuestion(lc, pc) {
+    if (!lc || pc == null) return null;
+    const p = parseChord(lc.primary), semis = mod(pc - p.root, 12);
+    const q = { chord: p.symbol, root: p.root, semis, label: degreeLabel(p, semis), sharps: p.sharps, note: pcName(pc, p.sharps), other: null };
+    if (lc.coming) { const c = parseChord(lc.chord), s = mod(pc - c.root, 12); q.other = { chord: c.symbol, semis: s, label: degreeLabel(c, s) }; }
+    return q;
+  }
+  // landingAccepts(q, answered) → 'primary' | 'other' | null: the answered degree (semitones, as on the buttons / keys) read
+  // over the primary chord, or over the chord at the attack when the note anticipates the coming one.
+  function landingAccepts(q, answered) {
+    if (!q || typeof answered !== 'number') return null;
+    const a = mod(answered, 12);
+    if (a === q.semis) return 'primary';
+    if (q.other && a === q.other.semis) return 'other';
+    return null;
+  }
+  // pickLanding(cands, { rng, last, history, unsure, set }) → one candidate | null
+  //   cands: [{ key, conf: 'high' | 'medium' | 'low', src: 'auto' | 'owner', skip, chord (primary), semis, other }]
+  //   Never a skipped one; low confidence only with `unsure` (owner-set ones always count); with `set` (semitone offsets of the
+  //   answer set over each candidate's primary chord: a function chord → offsets) only notes the buttons can answer; never the
+  //   previous question's key when another candidate exists; weights: weightOf(history, chord, semis) (degrees missed recently
+  //   come back more often) plus 3 per recent miss of this very phrase (fading like weightOf).
+  function eligibleLanding(c, o) {
+    if (!c || c.skip || c.semis == null) return false;
+    if (c.conf === 'low' && c.src !== 'owner' && !(o && o.unsure)) return false;
+    if (o && typeof o.set === 'function') { const s = o.set(c.chord); if (s && !s.includes(c.semis)) return false; }
+    return true;
+  }
+  function pickLanding(cands, o) {
+    const opt = o || {}, R = opt.rng || Math.random, H = opt.history || [];
+    const ok = (cands || []).filter((c) => eligibleLanding(c, opt));
+    if (!ok.length) return null;
+    let pool = ok.filter((c) => c.key !== opt.last);
+    if (!pool.length) pool = ok;
+    const ws = pool.map((c) => {
+      let w = weightOf(H, c.chord, c.semis);
+      for (let i = H.length - 1, age = 0; i >= 0 && age < 60; i--, age++) {
+        const e = H[i];
+        if (e && e.key === c.key && e.answered !== e.semis) w += 3 * Math.pow(0.93, age);
+      }
+      return w;
+    });
+    let x = R() * ws.reduce((a, b) => a + b, 0), k = 0;
+    while (k < pool.length - 1 && x >= ws[k]) { x -= ws[k]; k++; }
+    return pool[k];
+  }
+
   // Drill keys (DRILLS-SPEC.md): 1–7 natural degrees (2 = 9, 4 = 11, 6 = 13 / 6, 7 = maj 7), Shift+digit the flat one
   // (b9, #9/b3, b5/#11, b13, b7), Alt+4 #11.
   const KEY_DEGREES = { plain: { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 }, shift: { 2: 1, 3: 3, 5: 6, 6: 8, 7: 10 }, alt: { 4: 6 } };
 
   SLP.theory = { parseChord, chordTones, degreeLabel, shortLabel, guideTones, guideToneLine, answerSet, distinctChords, rng, nextQuestion,
-    weightOf, PRESETS, KEY_DEGREES, pcName, noteName, songBars, barActivity, pickBar, QUIET_MARGIN };
+    weightOf, PRESETS, KEY_DEGREES, pcName, noteName, songBars, barActivity, pickBar, QUIET_MARGIN,
+    landingChord, landingQuestion, landingAccepts, pickLanding, eligibleLanding, ANTICIPATION };
 })();
 // ---- dsp/tuning.js ----
 /* SLP.tuning — the recording's tuning offset from A4 = 440 Hz equal temperament, in cents (−50, +50] (pure DSP, no DOM).
@@ -4910,6 +5052,272 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
 
   SLP.tuning = { FRAME, create, estimate, frameTimes, mono, wrap, factor, a4 };
+})();
+// ---- dsp/pitch.js ----
+/* SLP.pitch — the pitch of the LAST note of a phrase (its "landing note") inside a band recording. Pure: no DOM, no audio
+ * API; runs in the page, a worker or jsc. Ported from the finished feasibility study (feasibility-landing/, results.md):
+ *
+ *   landingNote(onsets, phrase, nextA) → { t, s0, s1, stop } | null
+ *       the last onset of anchor strength (≥ 0.35) inside [phrase.a, phrase.b] and its sustain window:
+ *       s0 = t + 30 ms … s1 = min(t + 350 ms, the next anchor-strength onset − 10 ms, the next phrase's start + 20 ms), at
+ *       least 0.1 s. Weaker onsets in between (left-hand comping is capped at 0.3 by the detector) do not cut the window.
+ *       stop = where playback of the phrase ends: min(s1, nextA) (never into the next phrase). onsets: [{ t, strength }] or
+ *       bare times (every one an anchor); nextA: the next phrase's start or null.
+ *   estimate(pcm, t, s0, s1, { cents, pan }) → { midi, pc, conf, margin, agree, stab, yin, dev }
+ *       pcm = { sr, ch: [L, R?], t0 } covering at least [t − 0.3, s1 + 0.1]. Two estimators:
+ *       (a) harmonic sum: one zero-padded 32768-point FFT of the sustain (Hann), pan-masked (the bins whose L/R balance is near
+ *           the soloist's pan, as phrases.js does), magnitudes ^0.5; for every candidate C3…C7 (at the tuning) salience =
+ *           Σ 0.85^(h−1)·peak(h·f0, slightly stretched), h ≤ 6, minus 0.5 × the same at the half-harmonics, fundamental
+ *           required (≥ 12 % of the spectrum max); the strongest wins. margin = 1 − runner-up of another pitch class / best.
+ *       (b) YIN on L−R (the centred bass cancels), 2 × high-pass 400 Hz + low-pass 2.5 kHz, 2048-sample frames every 256
+ *           samples, threshold 0.2; the most common rounded note of the voiced frames.
+ *       stab = share of 3 overlapping sub-windows (0–60 %, 20–80 %, 40–100 %) where (a) gives the same pitch class.
+ *       conf: 'high' = (a) and (b) agree on the pitch class, stab ≥ 2/3 and margin ≥ 0.08; 'medium' = they agree, or (a) is
+ *       fully stable with margin ≥ 0.2; 'low' otherwise. Only the pitch class matters for the degree (octave splits are not
+ *       held against it). midi = (a)'s note (relative to the tuning), null when nothing was found.
+ *       A mono recording (pan null): no mask, YIN on the mix.
+ *   estimatePan(pcm, a, b) → pan −1…+1 of the solo instrument (energy-weighted pan histogram of 300–2500 Hz over up to 64
+ *       frames of [a, b], strongest peak refined by its neighbourhood, as phrases.js), or null for a (near-)mono file
+ *   landings(pcm, phrases, onsets, { cents, pan }) → per phrase { t, s0, s1, stop, midi, pc, conf, margin, agree } | null
+ *       (null: no anchor-strength onset in the phrase). The pan defaults to estimatePan over the phrases' span.
+ * Cost: about 25 ms per phrase in jsc on an M5 (the page runs one phrase per task).
+ */
+(function () {
+  'use strict';
+  const SLP = (typeof self !== 'undefined' ? self : globalThis).SLP ||= {};
+
+  const NF = 32768, FMAX = 8000;
+  const ANCHOR = 0.35, NEXT_MIN = 0.35, WIN = 0.35, PRE = 0.03, MIN_WIN = 0.1;
+  const LO = 48, HI = 96;                     // C3 … C7
+  const PAN_WIDTH = 0.45;
+  const clamp = (x, lo, hi) => (x < lo ? lo : x > hi ? hi : x);
+  const mod12 = (m) => ((m % 12) + 12) % 12;
+
+  const fftCache = {};
+  function fftOf(n) { if (!fftCache[n]) fftCache[n] = SLP.makeFFT(n); return fftCache[n]; }
+  let RE = null, IM = null;
+
+  const strengthOf = (o) => (typeof o === 'number' || o == null || o.strength == null ? 1 : o.strength);
+  const timeOf = (o) => (typeof o === 'number' ? o : o.t);
+
+  function landingNote(onsets, phrase, nextA) {
+    if (!onsets || !phrase) return null;
+    let li = -1;
+    for (let i = 0; i < onsets.length; i++) {
+      const t = timeOf(onsets[i]);
+      if (t < phrase.a - 1e-6) continue;
+      if (t > phrase.b + 1e-6) break;
+      if (strengthOf(onsets[i]) >= ANCHOR) li = i;
+    }
+    if (li < 0) return null;
+    const t = timeOf(onsets[li]);
+    let nextT = null;
+    for (let i = li + 1; i < onsets.length; i++) {
+      const u = timeOf(onsets[i]);
+      if (u > t + 0.06 && strengthOf(onsets[i]) >= NEXT_MIN) { nextT = u; break; }
+    }
+    const nA = typeof nextA === 'number' && isFinite(nextA) ? nextA : null;
+    if (nA != null && (nextT == null || nA < nextT)) nextT = nA + 0.03; // the study's rule (phrase starts carry a 30 ms pre-roll)
+    const s0 = t + PRE;
+    let s1 = Math.min(t + WIN, nextT != null ? nextT - 0.01 : Infinity);
+    if (s1 < s0 + MIN_WIN) s1 = s0 + MIN_WIN;
+    const stop = nA != null ? Math.max(t + 0.05, Math.min(s1, nA)) : s1;
+    return { t, s0, s1, stop };
+  }
+
+  function make(pcm, o) {
+    const sr = pcm.sr, L = pcm.ch[0], R = pcm.ch[1] || pcm.ch[0];
+    const cents = (o && o.cents) || 0, pan0 = o && typeof o.pan === 'number' ? o.pan : null, tf = Math.pow(2, cents / 1200);
+    const fft = fftOf(NF);
+    if (!RE) { RE = new Float64Array(NF); IM = new Float64Array(NF); }
+    const re = RE, im = IM;
+    const df = sr / NF, kMax = Math.round(FMAX / df);
+    const fOf = (m) => 440 * tf * Math.pow(2, (m - 69) / 12);
+    const midiOf = (f) => 69 + 12 * Math.log2(f / (440 * tf));
+    const idx = (t) => Math.round((t - pcm.t0) * sr);
+    const weight = (p) => clamp(1 - Math.abs(p - pan0) / PAN_WIDTH, 0, 1);
+    const masked = pan0 != null && !!pcm.ch[1];
+
+    // magnitude spectrum of [t0, t1) (Hann over the span, zero padded), 0…FMAX, normalised by the window sum
+    function spectrum(t0, t1) {
+      const i0 = idx(t0), n = Math.min(NF, Math.max(64, idx(t1) - i0));
+      re.fill(0); im.fill(0);
+      let ws = 0;
+      for (let i = 0; i < n; i++) {
+        const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * (i + 0.5) / n), x = i0 + i;
+        const l = x >= 0 && x < L.length ? L[x] : 0, r = x >= 0 && x < R.length ? R[x] : 0;
+        ws += w;
+        if (masked) { re[i] = l * w; im[i] = r * w; } else re[i] = 0.5 * (l + r) * w;
+      }
+      fft(re, im, false);
+      const mag = new Float64Array(kMax + 2);
+      for (let k = 1; k <= kMax + 1; k++) {
+        if (masked) {
+          const m = NF - k;
+          const al = Math.hypot(re[k] + re[m], im[k] - im[m]) / 2, ar = Math.hypot(im[k] + im[m], re[m] - re[k]) / 2;
+          mag[k] = 0.5 * (al + ar) * weight((ar - al) / (al + ar + 1e-12)) / ws;
+        } else mag[k] = Math.hypot(re[k], im[k]) / ws;
+      }
+      return mag;
+    }
+
+    // (a) harmonic sum: the strongest candidate, its cents deviation and the margin over another pitch class
+    function hsNote(t0, t1) {
+      const mag = spectrum(t0, t1);
+      const S = new Float64Array(mag.length);
+      let gmax = 0;
+      const f100 = Math.round(100 / df);
+      for (let k = f100; k < mag.length; k++) { S[k] = Math.sqrt(mag[k]); if (S[k] > gmax) gmax = S[k]; }
+      const peakAt = (f, tolC) => {
+        const a = Math.max(1, Math.floor(f * Math.pow(2, -tolC / 1200) / df)), b = Math.min(S.length - 1, Math.ceil(f * Math.pow(2, tolC / 1200) / df));
+        let v = 0, kb = a;
+        for (let k = a; k <= b; k++) if (S[k] > v) { v = S[k]; kb = k; }
+        return { v, k: kb };
+      };
+      const sal = (m) => {
+        const f = fOf(m);
+        if (peakAt(f, 35).v < 0.12 * gmax) return 0;
+        let s = 0, pen = 0;
+        for (let h = 1; h <= 6 && h * f < FMAX; h++) {
+          const w = Math.pow(0.85, h - 1), tol = 30 + 4 * h;   // piano partials run sharp
+          s += w * peakAt(h * f * (1 + 0.0002 * h * h), tol).v;
+          pen += w * peakAt((h - 0.5) * f, 25).v;
+        }
+        return s - 0.5 * pen;
+      };
+      const table = [];
+      let best = null;
+      for (let m = LO; m <= HI; m++) { const s = sal(m); table.push({ m, s }); if (s > 0 && (!best || s > best.s)) best = { m, s }; }
+      if (!best) return { m: null, margin: 0, dev: null };
+      const pk = peakAt(fOf(best.m), 35), k = pk.k, y0 = mag[k - 1] || 0, y1 = mag[k], y2 = mag[k + 1] || 0;
+      const d = (y0 - 2 * y1 + y2) !== 0 ? 0.5 * (y0 - y2) / (y0 - 2 * y1 + y2) : 0;
+      const dev = Math.round(100 * (midiOf((k + clamp(d, -0.5, 0.5)) * df) - best.m));
+      let run = 0;
+      for (const x of table) if (mod12(x.m - best.m) !== 0 && x.s > run) run = x.s;
+      return { m: best.m, dev, margin: clamp(1 - run / best.s, 0, 1) };
+    }
+
+    // (b) YIN on the band-limited side signal (the mix for a mono file)
+    function biquad(x, type, f, q) {
+      const w = 2 * Math.PI * f / sr, al = Math.sin(w) / (2 * q), c = Math.cos(w);
+      let b0, b1, b2;
+      if (type === 'hp') { b0 = (1 + c) / 2; b1 = -(1 + c); b2 = (1 + c) / 2; } else { b0 = (1 - c) / 2; b1 = 1 - c; b2 = (1 - c) / 2; }
+      const a0 = 1 + al, a1 = -2 * c, a2 = 1 - al;
+      const y = new Float32Array(x.length);
+      let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+      for (let i = 0; i < x.length; i++) {
+        const v = (b0 * x[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+        x2 = x1; x1 = x[i]; y2 = y1; y1 = v; y[i] = v;
+      }
+      return y;
+    }
+    function yinNote(t0, t1) {
+      const s0 = idx(t0 - 0.25), s1 = idx(t1) + 2048 + 400;
+      let x = new Float32Array(Math.max(0, s1 - s0));
+      const side = !!pcm.ch[1] && pan0 != null;
+      for (let i = 0; i < x.length; i++) {
+        const j = s0 + i, l = j >= 0 && j < L.length ? L[j] : 0, r = j >= 0 && j < R.length ? R[j] : 0;
+        x[i] = side ? l - r : 0.5 * (l + r);
+      }
+      x = biquad(biquad(x, 'hp', 400, 0.707), 'hp', 400, 0.707);
+      x = biquad(x, 'lp', 2500, 0.707);
+      const off = idx(t0) - s0, end = idx(t1) - s0;
+      const tauMin = Math.floor(sr / fOf(HI) / 1.06), tauMax = Math.ceil(sr / fOf(LO) * 1.06);
+      let W = 2048;
+      if (end - off < W + tauMax) W = 1024;
+      const d = new Float64Array(tauMax + 2), frames = [];
+      for (let p = off; p + W + tauMax + 2 <= x.length && (p <= end - W || frames.length === 0); p += 256) {
+        d[0] = 1;
+        let run = 0;
+        for (let tau = 1; tau <= tauMax + 1; tau++) {
+          let s = 0;
+          for (let j = 0; j < W; j++) { const e = x[p + j] - x[p + j + tau]; s += e * e; }
+          run += s;
+          d[tau] = run > 0 ? s * tau / run : 1;
+        }
+        let tau = -1;
+        for (let k = tauMin; k <= tauMax; k++) {
+          if (d[k] < 0.2) { while (k + 1 <= tauMax && d[k + 1] < d[k]) k++; tau = k; break; }
+        }
+        if (tau < 0) { frames.push({ voiced: false }); continue; }
+        const y0 = d[tau - 1], y1 = d[tau], y2 = d[tau + 1];
+        const sh = (y0 - 2 * y1 + y2) !== 0 ? clamp(0.5 * (y0 - y2) / (y0 - 2 * y1 + y2), -1, 1) : 0;
+        frames.push({ voiced: true, m: midiOf(sr / (tau + sh)) });
+      }
+      const v = frames.filter((f) => f.voiced);
+      if (!v.length) return { m: null, voicedFrac: 0 };
+      const cnt = {};
+      for (const f of v) { const n = Math.round(f.m); cnt[n] = (cnt[n] || 0) + 1; }
+      let best = Math.round(v[0].m);
+      for (const k in cnt) if (cnt[k] > cnt[best]) best = +k;   // the study's tie rule (ascending keys)
+      return { m: best, voicedFrac: v.length / frames.length };
+    }
+    return { hsNote, yinNote };
+  }
+
+  function confidence(agree, stab, margin) {
+    return agree && stab >= 0.67 && margin >= 0.08 ? 'high' : (agree || (stab === 1 && margin >= 0.2)) ? 'medium' : 'low';
+  }
+
+  function estimate(pcm, t, s0, s1, o) {
+    const P = make(pcm, o || {});
+    const a = P.hsNote(s0, s1), y = P.yinNote(s0, s1);
+    const n = s1 - s0;
+    let stab = 0.5;
+    if (n >= 0.15) {
+      const subs = [[s0, s0 + 0.6 * n], [s0 + 0.2 * n, s0 + 0.8 * n], [s0 + 0.4 * n, s1]].map(([u, v]) => P.hsNote(u, v).m);
+      stab = a.m == null ? 0 : subs.filter((m) => m != null && mod12(m) === mod12(a.m)).length / 3;
+    }
+    const agree = a.m != null && y.m != null && mod12(a.m) === mod12(y.m);
+    return { midi: a.m, pc: a.m == null ? null : mod12(a.m), conf: a.m == null ? 'low' : confidence(agree, stab, a.margin),
+      margin: Math.round(a.margin * 1000) / 1000, agree, stab: Math.round(stab * 100) / 100, yin: y.m, dev: a.dev };
+  }
+
+  // The soloist's pan (phrases.js's rule, on fewer frames: 64 frames of 1024 samples spread over [a, b])
+  function estimatePan(pcm, a, b) {
+    if (!pcm || !pcm.ch[1]) return null;
+    const sr = pcm.sr, L = pcm.ch[0], R = pcm.ch[1], N = 1 << Math.round(Math.log2(sr * 0.0232));
+    const fft = fftOf(N), win = SLP.hann(N), re = new Float64Array(N), im = new Float64Array(N);
+    const binOf = (hz) => clamp(Math.round(hz * N / sr), 1, N / 2 - 1), k0 = binOf(300), k1 = binOf(2500);
+    const i0 = Math.max(0, Math.round((a - pcm.t0) * sr)), i1 = Math.min(L.length - N, Math.round((b - pcm.t0) * sr) - N);
+    if (i1 <= i0) return null;
+    const hist = new Array(41).fill(0);
+    let monoE = 0, allE = 0;
+    const frames = 64;
+    for (let f = 0; f < frames; f++) {
+      const o = Math.round(i0 + (i1 - i0) * (f + 0.5) / frames);
+      for (let i = 0; i < N; i++) { re[i] = L[o + i] * win[i]; im[i] = R[o + i] * win[i]; }
+      fft(re, im, false);
+      for (let k = k0; k <= k1; k++) {
+        const m = N - k;
+        const al = Math.hypot(re[k] + re[m], im[k] - im[m]) / 2, ar = Math.hypot(im[k] + im[m], re[m] - re[k]) / 2;
+        const e = al * al + ar * ar, p = (ar - al) / (al + ar + 1e-12);
+        hist[Math.round((p + 1) * 20)] += e;
+        allE += e;
+        if (Math.abs(p) < 0.05) monoE += e;
+      }
+    }
+    if (!(allE > 0) || monoE > 0.9 * allE) return null;
+    const sm = hist.map((_, i) => (hist[i - 1] || 0) + 2 * hist[i] + (hist[i + 1] || 0));
+    let best = 0;
+    for (let i = 0; i <= 40; i++) if (sm[i] > sm[best]) best = i;
+    let num = 0, den = 0;
+    for (let i = Math.max(0, best - 4); i <= Math.min(40, best + 4); i++) { num += hist[i] * i; den += hist[i]; }
+    return Math.round((num / den / 20 - 1) * 100) / 100;
+  }
+
+  function landings(pcm, phrases, onsets, o) {
+    const opt = o || {}, list = phrases || [];
+    let pan = opt.pan;
+    if (pan === undefined && list.length) pan = estimatePan(pcm, list[0].a, list[list.length - 1].b);
+    return list.map((ph, i) => {
+      const w = landingNote(onsets, ph, i + 1 < list.length ? list[i + 1].a : null);
+      if (!w) return null;
+      return Object.assign({ t: w.t, s0: w.s0, s1: w.s1, stop: w.stop }, estimate(pcm, w.t, w.s0, w.s1, { cents: opt.cents || 0, pan }));
+    });
+  }
+
+  SLP.pitch = { landingNote, estimate, estimatePan, landings, confidence, ANCHOR, WIN, NF };
 })();
 // ---- app/anytune.js ----
 /* SLP.anytune — Anytune Pro+ `.atcfg` import/export (lifted from v1, behaviour-identical).
@@ -5221,7 +5629,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  * Phrases        setPhrases(loopId, list, {keepManual}) · addPhrase(loopId, {a, b, name}) → phrase
  *                updatePhrase(loopId, id, {a, b}) · splitPhrase(loopId, t) · mergePhrase(loopId, id)
  *                removePhrase(loopId, id) · starPhrase(loopId, id, star?) · renamePhrase(loopId, id, name)
- *                setActivePhrases([firstId, lastId] | null)
+ *                setActivePhrases([firstId, lastId] | null) · setLanding(loopId, id, { t, midi } | { t, skip: true } | null) → changed?
+ *                (Kelly's landing note: the owner's correction, phrase.landing = { t, midi?, skip?, src: 'owner' }; one undo step,
+ *                synced with the phrase; automatic estimates are never stored)
  *                Phrase lists stay ordered and non-overlapping; an edited edge sets manual: true.
  * Practice/grid  setPractice(patch) · setGrid(grid | null)
  * Ear drills     setDrills(patch, {label}) → changed? · song.drills (normDrills / defaultDrills; synced with the practice section)
@@ -5377,7 +5787,22 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // Phase 1 saves (no `quiet` field) stored context 'comp' as the default (Song did not exist): they load as 'song'.
   function defaultDrills() {
     return { answerSet: 'colour', chords: null, context: 'song', noteOn: 'beat3', singFirst: true,
-      guide: { start: '3', mode: 'with', rhythm: 'half' }, level: -6, leadIn: false, quiet: true };
+      guide: { start: '3', mode: 'with', rhythm: 'half' }, level: -6, leadIn: false, quiet: true,
+      drill: null, landing: defaultLandingOpts() };
+  }
+  // Kelly's landing note: drill = 'landing' | 'degree' | null (null = automatic: the landing drill when the song has decoded
+  // audio and detected phrases, else Degree over the chord). landing.from 'loop' | 'form' (the active loop's phrases, or every
+  // loop's inside the form) · play 'phrase' | 'bar' (the whole phrase, or its last bar) · after 'silence' | 'echo' (after the
+  // stop: nothing, or the landing note as a tuned tone) · unsure (also ask notes the detector is unsure of).
+  function defaultLandingOpts() { return { from: 'loop', play: 'phrase', after: 'silence', unsure: false }; }
+  function normLandingOpts(x) {
+    const o = defaultLandingOpts();
+    if (!x || typeof x !== 'object') return o;
+    if (x.from === 'form') o.from = 'form';
+    if (x.play === 'bar') o.play = 'bar';
+    if (x.after === 'echo') o.after = 'echo';
+    o.unsure = x.unsure === true;
+    return o;
   }
   function normDrills(d) {
     const o = defaultDrills();
@@ -5397,6 +5822,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     o.level = Math.round(Math.min(0, Math.max(-40, num(d.level, -6))));
     o.leadIn = d.leadIn === true;
     o.quiet = d.quiet !== false;
+    o.drill = d.drill === 'landing' || d.drill === 'degree' ? d.drill : null;
+    o.landing = normLandingOpts(d.landing);
     return o;
   }
   // Tuning (2026-11): the recording's offset from A = 440 in cents, applied to every drill sound. Integers in −50…50 (the
@@ -5459,10 +5886,25 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const prevB = out.length ? out[out.length - 1].b : lo;
       const a = Math.max(p.a, lo, prevB), b = Math.min(p.b, hi);
       if (b - a < MIN_LEN - EPS) continue;
-      out.push({ id: p.id || newId('p'), a, b, star: !!p.star, name: typeof p.name === 'string' ? p.name : '', manual: !!p.manual,
-        shift: Math.min(64, Math.max(-64, Math.round(num(p.shift, 0)))) });
+      const q = { id: p.id || newId('p'), a, b, star: !!p.star, name: typeof p.name === 'string' ? p.name : '', manual: !!p.manual,
+        shift: Math.min(64, Math.max(-64, Math.round(num(p.shift, 0)))) };
+      const ln = normLanding(p.landing, a, b);
+      if (ln) q.landing = ln;
+      out.push(q);
     }
     return out;
+  }
+  // Kelly's landing note (the landing-note drill): the OWNER's correction of a phrase's last note, synced with the phrase and
+  // undoable. { t: the attack of the note it is about (song s, 4 decimals), midi (the true note) | skip: true (never ask this
+  // phrase), src: 'owner' }. Automatic estimates are never stored here (the page keeps them in memory: re-derivable from the
+  // audio, so they cost no sync traffic and no undo steps). A landing whose note no longer lies inside the phrase is dropped.
+  function normLanding(l, a, b) {
+    if (!l || typeof l !== 'object' || l.src === 'auto' || typeof l.t !== 'number' || !isFinite(l.t)) return null;
+    if (l.t < a - 0.02 || l.t > b + 0.02) return null;
+    const out = { t: Math.round(l.t * 1e4) / 1e4, src: 'owner' };
+    if (typeof l.midi === 'number' && isFinite(l.midi)) out.midi = Math.min(108, Math.max(21, Math.round(l.midi)));
+    if (l.skip === true) out.skip = true;
+    return out.midi == null && !out.skip ? null : out;
   }
 
   function normLoop(l, max) {
@@ -5753,7 +6195,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   let stampNow = () => Date.now();
   const metaValue = (s) => ({ title: s.title, artist: s.artist, sourceDuration: s.sourceDuration, template: s.template });
   const loopValue = (l) => ({ name: l.name, a: l.a, b: l.b, pos: l.pos, uuid: l.uuid || null, sens: l.phraseSensitivity,
-    phrases: l.phrases.map((p) => ({ id: p.id, a: p.a, b: p.b, star: !!p.star, name: p.name || '', manual: !!p.manual, shift: p.shift || 0 })) });
+    phrases: l.phrases.map((p) => ({ id: p.id, a: p.a, b: p.b, star: !!p.star, name: p.name || '', manual: !!p.manual, shift: p.shift || 0,
+      landing: p.landing ? Object.assign({}, p.landing) : undefined })) });   // landing: only the owner's corrections (absent = no key)
   function secFp(s, k) {
     // the practice section also carries the ear drill settings (song.drills, DRILLS-SPEC.md) and the tuning (song.tuning)
     return k === 'meta' ? canon([s.title, s.artist, s.sourceDuration]) : k === 'speed' ? String(s.rate)
@@ -6208,7 +6651,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const L = phraseCtx(loopId);
     const fresh = normPhrases((list || []).map((p) => ({ a: p.a, b: p.b })), L.a, L.b);
     record(opts && opts.keepManual ? 'regroup phrases' : 'replace all phrases');
-    if (!(opts && opts.keepManual)) { L.phrases = fresh; phrasesChanged(L); return; }
+    // the owner's landing-note corrections are facts about notes, not about phrase edges: they move to the new phrase that
+    // holds their note (the latest one when a new phrase holds several)
+    const marks = L.phrases.filter((p) => p.landing && !(opts && opts.keepManual && (p.manual || p.star || p.name || p.shift))).map((p) => p.landing);
+    const carry = (list) => { for (const f of list) { if (f.landing) continue; let m = null; for (const x of marks) if (x.t >= f.a - 0.02 && x.t <= f.b + 0.02 && (!m || x.t > m.t)) m = x; if (m) f.landing = Object.assign({}, m); } return list; };
+    if (!(opts && opts.keepManual)) { L.phrases = normPhrases(carry(fresh), L.a, L.b); phrasesChanged(L); return; }
     const kept = L.phrases.filter((p) => p.manual || p.star || p.name || p.shift);
     const out = kept.slice();
     for (const f of fresh) {
@@ -6216,7 +6663,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       for (const k of kept) {
         pieces = pieces.flatMap(([a, b]) => (k.b <= a || k.a >= b ? [[a, b]] : [[a, k.a], [k.b, b]]));
       }
-      for (const [a, b] of pieces) if (b - a >= MIN_LEN) out.push({ id: newId('p'), a, b, star: false, name: '', manual: false });
+      for (const [a, b] of pieces) if (b - a >= MIN_LEN) out.push(carry([{ id: newId('p'), a, b, star: false, name: '', manual: false }])[0]);
     }
     L.phrases = normPhrases(out, L.a, L.b);
     phrasesChanged(L);
@@ -6252,6 +6699,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (typeof patch.a === 'number') p.a = Math.min(Math.max(lo, patch.a), p.b - MIN_LEN);
     if (typeof patch.b === 'number') p.b = Math.max(Math.min(hi, patch.b), p.a + MIN_LEN);
     p.manual = true;
+    if (p.landing && (p.landing.t < p.a - 0.02 || p.landing.t > p.b + 0.02)) delete p.landing; // its note left the phrase
     phrasesChanged(L);
   }
   function splitPhrase(loopId, t) {
@@ -6262,6 +6710,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (t - p.a < MIN_LEN || p.b - t < MIN_LEN) return null;
     record('split phrase ' + (i + 1));
     const q = { id: newId('p'), a: t, b: p.b, star: false, name: '', manual: true, shift: 0 };
+    if (p.landing && p.landing.t >= t) { q.landing = p.landing; delete p.landing; } // the landing correction goes with its note
     p.b = t; p.manual = true;
     L.phrases.splice(i + 1, 0, q);
     // a split never changes what is looping: a selection ending on p now ends on its right half
@@ -6277,6 +6726,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const p = L.phrases[i], q = L.phrases[i + 1];
     record('merge phrases ' + (i + 1) + '–' + (i + 2));
     p.b = q.b; p.star = p.star || q.star; p.name = p.name || q.name; p.manual = true;
+    if (q.landing) p.landing = q.landing; else delete p.landing; // the merged phrase ends with q's last note
     L.phrases.splice(i + 1, 1);
     // a selection that named the merged-away phrase now names the merged one
     const s = song();
@@ -6306,6 +6756,20 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     record('rename phrase ' + phraseNo(L, id), 'phname:' + id);
     p.name = String(name || '');
     changed('phrases', { loopId });
+  }
+  // Kelly's landing note: the owner's correction (value = { t, midi } or { t, skip: true }) or null (back to the automatic
+  // estimate). One undo step; synced with the phrase (its loop's stamp). Returns whether anything changed.
+  function setLanding(loopId, id, value, opts) {
+    const L = phraseCtx(loopId), p = L.phrases.find((x) => x.id === id);
+    if (!p) return false;
+    const next = value ? normLanding(Object.assign({}, value, { src: 'owner' }), p.a, p.b) : null;
+    if (value && !next) return false; // not a valid correction for this phrase (its note lies outside it): refused, nothing cleared
+    if (canon(next) === canon(p.landing || null)) return false;
+    const n = phraseNo(L, id);
+    record((opts && opts.label) || (!next ? 'landing of phrase ' + n + ': automatic' : next.skip ? 'skip phrase ' + n + ' (landing drill)' : 'landing note of phrase ' + n));
+    if (next) p.landing = next; else delete p.landing;
+    changed('phrases', { loopId, landing: true });
+    return true;
   }
   // Rev 2: the fixed-length window's slide for this phrase, in half-beats (0 = where Start puts it).
   function setPhraseShift(loopId, id, shift, opts) {
@@ -6345,7 +6809,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   // Ear drill settings (one undo step per change; a label per control)
   const DRILL_LABEL = { answerSet: 'ear: answer set', chords: 'ear: chords', context: 'ear: context', noteOn: 'ear: note', singFirst: 'ear: sing first',
-    level: 'ear: level', leadIn: 'ear: lead-in', quiet: 'ear: quiet bars' };
+    level: 'ear: level', leadIn: 'ear: lead-in', quiet: 'ear: quiet bars', drill: 'ear: drill', landing: 'ear: landing options' };
   function setDrills(patch, opts) {
     const s = song();
     const next = normDrills(Object.assign({}, s.drills, patch || {}));
@@ -6555,7 +7019,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     song, loop, phraseRange,
     addSong, renameSong, removeSong, setActive, updateSong, setRate, setLoopOn,
     selectLoop, addLoop, duplicateLoop, removeLoop, updateLoop,
-    setPhrases, addPhrase, updatePhrase, splitPhrase, mergePhrase, removePhrase, starPhrase, renamePhrase, setActivePhrases, setPhraseShift,
+    setPhrases, addPhrase, updatePhrase, splitPhrase, mergePhrase, removePhrase, starPhrase, renamePhrase, setActivePhrases, setPhraseShift, setLanding, normLanding,
     setPractice, setGrid, setDrills, defaultDrills, normDrills, setTuning, autoTuning, defaultTuning, normTuning,
     TRADE_PRESETS, tradePreset, tradeMatches, tradeOn, applyTrade, toggleTrade,
     history, transact, endGesture, sync,
@@ -7105,6 +7569,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *             A ghost's tick at offset 0 is scheduled even when the ghost is decided a little late (up to 10 ms).
  *             ctx (AudioContext or null) · output (master GainNode; tap it for meters) · buffer (the decoded AudioBuffer or
  *             null; read only, the ear drills' Song context plays bars of it at rate 1 through its own nodes)
+ *             renderFor(t0, t1, rate) → { buffer, base, rate } | null: a cached smooth render covering [t0, t1] at that speed
+ *             (read only, no LRU touch, nothing queued; the landing-note drill plays phrases from it)
  * Events      on(name, fn) → off()
  *             'state' (state object, on any change) · 'loaded' {name, duration, decoded, durationMismatch}
  *             'error' {kind: 'decode'|'media'|'render', message} · 'range' (null, when seek/setLoop dropped the range)
@@ -8111,6 +8577,15 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     get duration() { return duration(); },
     get peaks() { return peaks; },
     get buffer() { return decoded; }, // the decoded AudioBuffer (read only; the ear drills' Song context plays bars of it at rate 1)
+    // A smooth render already in the cache at speed r whose region covers song time [t0, t1] (read only: the LRU order, the
+    // queue and the jobs are not touched; nothing is rendered). → { buffer (AudioBuffer), base (song s at offset 0), rate } | null.
+    // Rate ≈ 1 → the decoded buffer itself. The landing-note drill plays its phrases from it at the transport speed.
+    renderFor(t0, t1, r) {
+      if (!decoded) return null;
+      if (isOne(r)) return { buffer: decoded, base: 0, rate: 1 };
+      for (const e of cache.values()) if (Math.abs(e.rate - r) < 0.0005 && e.a <= t0 + 1e-6 && e.b >= t1 - 1e-6) return { buffer: e.buffer, base: e.a, rate: e.rate };
+      return null;
+    },
     get pcm() { return decoded ? { sr: decoded.sampleRate, length: decoded.length, channels: Math.min(2, decoded.numberOfChannels), slice } : null; },
     setLoop, setRange, setRate, setLoopOn, setPractice, setClick, prerender, prerenderSet, scrubSnippet, scrubStop,
     play, pause, toggle, seek, restart,
@@ -8281,6 +8756,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   invalidate()          static layers are stale (data, theme, size)
  *   requestPaint()        repaint once (playhead moved, paused seek…). While model().playing the
  *                         loop keeps itself going with requestAnimationFrame; when paused it stops.
+ *   mark({ a, b } | null)  the landing drill's asked phrase: outlined on the phrase lane and the waveform (accent colour, drawn
+ *                         per paint over the cached layers; the selection, focus and view are not touched)
  *   view() → [t0, t1] · xOf(lane, t) → client x (CSS px) · tOf(lane, clientX) · stats {paints, layerBuilds}
  *
  * Every layer is drawn in device pixels into an offscreen canvas and rebuilt only when its stamp
@@ -8307,6 +8784,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // Touch (phone, 2026-11): A/B, window edges, phrase edges and bar lines are dragged by touch only while "Edit handles"
   // is on (then with a 28 px wide hit area); otherwise one finger scrubs / taps / swipes. The mouse is unchanged.
   let editHandles = false;
+  let markSpan = null; // the landing drill's asked phrase { a, b }: outlined per paint, never part of the selection
 
   function readColors() {
     const v = (n) => U.cssVar(n);
@@ -8755,6 +9233,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const left = c.getBoundingClientRect().left, cw = c.width / c.getBoundingClientRect().width;
       stats.ovRect = [left + Math.round(x0) / cw, left + (Math.round(x0) + Math.max(lw, Math.round(x1 - x0))) / cw]; // as drawn, client CSS px
     }
+    if (markSpan && markSpan.b > t0 && markSpan.a < t1) {
+      for (const name of ['phr', 'wave']) {
+        const c = cv[name], g = c.getContext('2d'), w = c.width, h = c.height;
+        const x0 = Math.max(0, (markSpan.a - t0) / (t1 - t0) * w), x1 = Math.min(w, (markSpan.b - t0) / (t1 - t0) * w), lw = Math.max(2, Math.round(2 * k));
+        g.save();
+        if (name === 'wave') { g.fillStyle = colors.accentSoft; g.globalAlpha = 0.55; g.fillRect(x0, 0, x1 - x0, h); g.globalAlpha = 1; }
+        g.strokeStyle = colors.accent; g.lineWidth = lw; g.setLineDash(name === 'wave' ? [5 * k, 4 * k] : []);
+        g.strokeRect(x0 + lw / 2, lw / 2, Math.max(lw, x1 - x0 - lw), h - lw);
+        g.restore();
+      }
+      stats.mark = { a: markSpan.a, b: markSpan.b };
+    } else stats.mark = null;
     if (drag && (drag.kind === 'wedge' || drag.kind === 'wcreate')) {
       const c = cv.wave, g = c.getContext('2d'), w = c.width, h = c.height;
       const X = (t) => (t - t0) / (t1 - t0) * w;
@@ -9198,6 +9688,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   SLP.wave = {
     init, invalidate, requestPaint, view, stats, setFree, panBy, zoomAt, setEditHandles,
+    mark(span) { markSpan = span && isFinite(span.a) && isFinite(span.b) && span.b > span.a ? { a: span.a, b: span.b } : null; requestPaint(); },
+    get marked() { return markSpan ? Object.assign({}, markSpan) : null; },
     get free() { return !!free; },
     get editHandles() { return editHandles; },
     get touching() { return touch.two ? 'two' : touch.one ? (touch.one.live ? 'live' : 'pending') : null; },
@@ -9569,7 +10061,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     ['Enter', 'start the drill / next question'], ['Esc', 'end the drill'],
     ['1 – 7', 'answer 1 9 3 11 5 13 7 (2 = 9, 4 = 11, 6 = 13 / 6)'], ['Shift+2 3 5 6 7', 'answer b9 #9/b3 #11/b5 b13 b7'],
     ['Alt+4', 'answer #11'], ['R', 'repeat the question'],
-    ['Space', 'the chord again (no note)'], ['H', 'hear it: root, note, both'],
+    ['Space', 'the chord again (no note) · landing drill: the phrase again'], ['H', 'hear it: root, note, both · landing drill: the phrase end with the note'],
   ];
 
   // ---------- edge editors (A/B of loop and phrase) ----------
@@ -9625,6 +10117,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       h('span', { class: 'chk' }), h('span', { text: gapName(v) })));
     SLP.pics.init({ seek: (t) => api.seek(t), cell: (k) => api.gridCell(k) });
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => groupLines()).observe($('section.practice'));
+    landInit();
   }
 
   const setIfIdle = (el, v) => { if (document.activeElement !== el) el.value = v; };
@@ -9678,8 +10171,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const ol = $('#phraseList');
     const L = v.loop;
     // Selection-only changes update the rows in place (a rebuilt row would swallow a double-click).
+    const land = new Map(L.phrases.map((p) => [p.id, v.landing ? v.landing(p) : null]));
     const sig = JSON.stringify([L.id, L.a, L.b, editingId, v.detecting, v.hasAudio, L.phrases.map((p) => [p.id, p.a, p.b, p.star, p.name, p.manual,
-      v.grid ? GH.barLabel(v.grid, p.a, p.b) : '']) ]);
+      v.grid ? GH.barLabel(v.grid, p.a, p.b) : '', land.get(p.id) ? [land.get(p.id).short, land.get(p.id).how] : null]) ]);
     if (sig === lastSig) {
       for (const p of L.phrases) {
         const li = ol.querySelector('[data-id="' + p.id + '"]');
@@ -9718,8 +10212,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         name.append(inp);
         setTimeout(() => { inp.focus(); inp.select(); }, 0);
       } else name.textContent = p.name || '';
+      // Kelly's landing note: "→ D · 3", with "checked" when the owner set it and "unsure" for a doubtful automatic one
+      const ld = land.get(p.id), ldOk = ld && (ld.state === 'ok' || ld.state === 'skip');
       const lab = h('span', { class: 'label' }, (p.name || editingId === p.id) ? name : null, h('span', { class: 'bars', text: label }),
-        p.manual && !p.name && editingId !== p.id ? h('span', { class: 'man', text: 'edited' }) : null);
+        p.manual && !p.name && editingId !== p.id ? h('span', { class: 'man', text: 'edited' }) : null,
+        ldOk ? h('span', { class: 'land' + (ld.state === 'skip' ? ' skip' : ''), text: ld.state === 'skip' ? 'skipped' : '→ ' + ld.short, title: (ld.text + ' · ' + ld.how).replace(/^./, (c) => c.toUpperCase()) }) : null,
+        ldOk && ld.how !== 'automatic' ? h('span', { class: 'man', text: ld.how === 'checked by you' ? 'checked' : 'unsure' }) : null);
       const out = outside(L, p);
       const li = h('li', { class: cls, 'data-id': p.id, 'aria-selected': String(sel), tabindex: '0',
         title: U.fmt(p.a) + ' → ' + U.fmt(p.b) + (p.manual ? ' · edited by hand' : '') + (out ? ' · outside the loop' : '') + ' · double-click to name' },
@@ -9788,6 +10286,37 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     el.textContent = '';
     el.append(...kids);
   }
+  // Phrase inspector: Kelly's landing note of the phrase ("lands on D · 3 of Bb7 · automatic"), Fix… opens the 12 notes over
+  // the chord (stored as the owner's, synced, undoable), Skip in the drill, Automatic (forget the correction)
+  let landOpen = null; // the phrase id whose Fix box is open
+  function landRow(d, p) {
+    const t = $('#phLand'), fix = $('#phLandFix'), box = $('#phLandBox');
+    const ok = !!(d && p && (d.state === 'ok' || d.state === 'skip'));
+    const text = d && d.text ? d.text + (ok ? ' · ' + d.how : '') : '–';
+    if (t.textContent !== text) t.textContent = text;
+    t.title = text;
+    t.classList.toggle('muted', !ok);
+    fix.disabled = !ok;
+    if (!ok || landOpen !== p.id) { landOpen = ok && landOpen === p.id ? landOpen : null; }
+    const open = ok && landOpen === p.id;
+    fix.setAttribute('aria-expanded', String(open));
+    box.hidden = !open;
+    if (!open) return;
+    $('#phLandAuto').hidden = d.l.src !== 'owner';
+    $('#phLandSkip').setAttribute('aria-pressed', String(!!d.l.skip));
+    const chips = $('#phLandChips'), sig = p.id + '#' + d.notes.map((n) => n.midi + n.label).join(',') + '#' + d.l.pc;
+    if (chips.dataset.sig === sig) return;
+    chips.dataset.sig = sig;
+    chips.textContent = '';
+    for (const n of d.notes) chips.append(h('button', { type: 'button', class: 'ear-chip fix-chip', 'data-midi': String(n.midi), 'aria-pressed': String(n.pc === d.l.pc && !d.l.skip),
+      title: 'The last note is ' + n.note + (n.label ? ' (' + n.label + (d.q ? ' over ' + d.q.chord : '') + ')' : '') + ': store it on this phrase' }, h('b', { text: n.note }), n.label ? ' ' + n.label : ''));
+  }
+  function landInit() {
+    $('#phLandFix').addEventListener('click', () => { const id = api.focusId(); landOpen = landOpen === id ? null : id; api.refresh(); });
+    $('#phLandChips').addEventListener('click', (e) => { const b = e.target.closest('button[data-midi]'); if (b) { landOpen = null; api.setLanding('midi', Number(b.dataset.midi)); } });
+    $('#phLandSkip').addEventListener('click', () => { landOpen = null; api.setLanding('skip'); });
+    $('#phLandAuto').addEventListener('click', () => { landOpen = null; api.setLanding('auto'); });
+  }
   function inspector(v) {
     for (const b of U.$$('.tabs [data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === v.tab));
     $('#tabLoop').hidden = v.tab !== 'loop';
@@ -9837,6 +10366,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         } else setChips(win, [h('span', { class: 'note', text: 'Sub-loop ' + (w.length || 'phrase') + ': no window' })]);
         win.title = w.fixed ? 'Window: ' + w.text : '';
         $('#phWinReset').disabled = !w.fixed || !w.shift;
+        landRow(v.landing, p);
       } else {
         setChips($('#phInfo'), [h('span', { class: 'note', text: 'No phrase selected. Click one on the lane or in the list.' })]);
         $('#phInfo').title = '';
@@ -9844,6 +10374,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         edgeInputs['ph-a'].value = ''; edgeInputs['ph-b'].value = '';
         $('#phMusA').textContent = ''; $('#phMusB').textContent = '';
         setChips($('#phWin'), []);
+        landRow(null, null);
       }
       SLP.pics.phrase($('#phPic'), { grid: g, peaks: v.peaks, hasAudio: v.hasAudio, phrase: p ? { a: p.a, b: p.b } : null, play: p ? v.play : null,
         lenText: v.lenText, label: p ? (v.phraseIndex + 1) + ' of ' + L.phrases.length : '' });
@@ -10393,9 +10924,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   'tone'  the test tone: timbre 'piano' (6 partials, slightly stretched, upper partials decaying faster, 8 ms attack,
  *           exponential decay to −40 dB over ~1.6 s) or 'organ' (sustained, for long notes)
  *   'bass'  plucked bass note (comp) · 'shell' a soft piano voicing (comp) · 'drone' held organ chord, quiet · 'tick' metronome
- *   'rec'   a stretch of the recording (Song context): { t, kind: 'rec', buffer (AudioBuffer), offset (song seconds), dur, db }
- *           played at rate 1 from the decoded buffer through its own gain (5 ms fades), at db relative to loop playback's level
- *           (the drill bus's 0.8 is compensated). One per plan; recPos tells where in the song it is right now.
+ *   'rec'   a stretch of the recording: { t, kind: 'rec', buffer (AudioBuffer), offset (song seconds), dur (song seconds), db,
+ *           rate (1), base (0), fadeOut (s) } from the decoded buffer (rate 1) or from an engine render already in its cache
+ *           (rate < 1, base = the render's song start: the landing-note drill at the transport speed), through its own gain
+ *           (5 ms fade in, fadeOut ending at the stop), at db relative to loop playback's level (the drill bus's 0.8 is
+ *           compensated). One per plan; recPos tells where in the song it is right now; rec = { at, offset, dur (real s), rate, end
+ *           (song s of the stop) } of the last plan.
  *   get recPos                                → the song time the 'rec' event is playing now, or null (not started / ended)
  * Levels (linear peak of one note before the bus): tone 0.30, bass 0.26, shell 0.10 per note, drone 0.05 per note, tick 0.4 ×
  * the click volume; the drill bus is 0.8. These are guesses made without listening: they need the owner's ears.
@@ -10464,26 +10998,30 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     nodes.push(o);
   }
 
-  // A stretch of the decoded recording at rate 1 (nothing rendered): 5 ms fade in / out, gain = 10^(db / 20) / bus gain.
-  function recording(bus, e, t, dur, nodes) {
-    const buf = e.buffer, off = Math.max(0, Math.min(e.offset || 0, buf.duration - 0.05));
-    const d = Math.max(0.03, Math.min(dur, buf.duration - off));
+  // A stretch of the recording (nothing rendered here): the decoded buffer at rate 1, or a smooth render already made by the
+  // engine (rate < 1: buffer second x holds song second base + x · rate). offset / dur are SONG seconds; it sounds for
+  // dur / rate seconds. 5 ms fade in, fadeOut (default 5 ms) ending exactly at the stop; gain = 10^(db / 20) / bus gain.
+  function recording(bus, e, t, nodes) {
+    const buf = e.buffer, rate = e.rate > 0 ? e.rate : 1, base = e.base || 0;
+    const boff = Math.max(0, Math.min(((e.offset || 0) - base) / rate, buf.duration - 0.05));
+    const d = Math.max(0.03, Math.min(Math.max(0.03, e.dur || 0.5) / rate, buf.duration - boff));
     const src = ctx.createBufferSource(), g = ctx.createGain(), lvl = Math.pow(10, (e.db == null ? -6 : e.db) / 20) / 0.8, F = 0.005;
+    const FO = Math.min(d / 2, e.fadeOut > 0 ? e.fadeOut : F);
     src.buffer = buf;
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(lvl, t + F);
-    g.gain.setValueAtTime(lvl, t + d - F);
+    g.gain.setValueAtTime(lvl, t + d - FO);
     g.gain.linearRampToValueAtTime(0, t + d);
     src.connect(g); g.connect(bus);
-    src.start(t, off, d);
+    src.start(t, boff, d);
     src.stop(t + d + 0.02);
     nodes.push(src);
-    return { at: t, offset: off, dur: d };
+    return { at: t, offset: base + boff * rate, dur: d, rate };
   }
   function recPos() {
     if (!cur || !cur.rec || !ctx) return null;
     const dt = ctx.currentTime - cur.rec.at;
-    return dt < 0 || dt > cur.rec.dur ? null : cur.rec.offset + dt;
+    return dt < 0 || dt > cur.rec.dur ? null : cur.rec.offset + dt * cur.rec.rate;
   }
 
   function stop() {
@@ -10519,7 +11057,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       else if (e.kind === 'shell') for (const m of ms) piano(bus, m, t, dur, 0.10 * vel, nodes, 0.6);
       else if (e.kind === 'drone') for (const m of ms) organ(bus, m, t, dur, 0.05 * vel, nodes, 0.06);
       else if (e.kind === 'tick') tick(bus, t, !!e.accent, vel, nodes);
-      else if (e.kind === 'rec' && e.buffer) rec = recording(bus, e, t, dur, nodes);
+      else if (e.kind === 'rec' && e.buffer) { rec = recording(bus, e, t, nodes); end = Math.max(end, t + rec.dur); continue; }
       end = Math.max(end, t + dur);
     }
     cur = { bus, nodes, start: t0, end, rec };
@@ -10527,8 +11065,173 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return { start: t0, end, ctx };
   }
 
-  SLP.earAudio = { play, stop, get playing() { return !!(cur && ctx && ctx.currentTime < lastEnd + 0.1); }, get ctx() { return ctx; }, get recPos() { return recPos(); },
+  SLP.earAudio = { play, stop, get rec() { return cur && cur.rec ? Object.assign({ end: cur.rec.offset + cur.rec.dur * cur.rec.rate }, cur.rec) : null; },
+    get playing() { return !!(cur && ctx && ctx.currentTime < lastEnd + 0.1); }, get ctx() { return ctx; }, get recPos() { return recPos(); },
     get notes() { return notes.map((n) => Object.assign({}, n)); } };
+})();
+// ---- app/landing.js ----
+/* SLP.landing — Kelly's landing note: the last note of every detected phrase, for the landing-note drill, the phrase list and
+ * the Phrase inspector. The pitch comes from SLP.pitch (pure) on the decoded recording; this module schedules it and keeps
+ * the results.
+ *
+ *   init({ engine, store, onChange })   onChange() is called (at most every 150 ms, and when a batch ends) after new results
+ *   of(loop, phrase) → the phrase's landing:
+ *       undefined  not known yet (no decoded audio, the estimate is queued or running; asking queues it)
+ *       null       no usable landing (no anchor-strength note in the phrase, no cached onsets, or no pitch found)
+ *       { t, midi, pc, conf: 'high' | 'medium' | 'low', src: 'auto' | 'owner', skip, stop, s0, s1, margin, agree, auto }
+ *         src 'owner' = phrase.landing (the owner's correction, synced, undoable) while its note is still the phrase's last
+ *         note (|landing.t − t| < 5 ms); otherwise the automatic estimate (src 'auto'). auto = the automatic result (or null).
+ *   want(loops)          queue every phrase of these loops (the drill's "All loops in the form")
+ *   progress(loops) → { done, total, running }   for the status / prompt ("Finding the landing notes… 12 of 33")
+ *   describe(loop, phrase, grid) → { state, text: 'lands on D · 3 of Bb7', short, how: 'automatic' | 'checked by you' …, notes }
+ *   window(loop, phrase) → SLP.pitch.landingNote's { t, s0, s1, stop } (instant: onsets only) | null
+ *   stats                test hook { computed, ms: [per phrase], pans: {key: pan}, queue }
+ * Automatic results live in memory only (a Map keyed by song, attack time, window end, tuning and pan): they are re-derivable
+ * from the audio like the cached onsets, so they cost no sync traffic, no stamps and no undo steps; a phrase whose end edge,
+ * split or merge changes gets a new key and is estimated again. The work runs on the main thread one phrase per task (about
+ * 25 ms each), never while the tuning measurement runs, and starts 2.2 s after a decode (playback and phrase detection go
+ * first; the tuning is then known, so nothing is estimated twice).
+ */
+(() => {
+  'use strict';
+  const SLP = (typeof self !== 'undefined' ? self : globalThis).SLP ||= {};
+  if (typeof document === 'undefined') return;
+  const PT = SLP.pitch;
+  let E = null, S = null, onChange = null;
+  const cache = new Map();       // key → result | null
+  const pans = new Map();        // songId|a|b → pan | null
+  const queue = [];              // [{ key, songId, t, s0, s1, pan }]
+  const queued = new Set();
+  let pumping = false, loadedAt = 0, notifyT = 0, buf = null;
+  const stats = { computed: 0, ms: [], get queue() { return queue.length; }, pans };
+
+  const cents = () => { const s = S.song(); return s.tuning ? s.tuning.cents : 0; };
+  function onsetsOf(L) { return Array.isArray(L.onsets) && L.onsets.length ? L.onsets : null; }
+  function nextA(L, p) { const i = L.phrases.indexOf(p); return i >= 0 && i + 1 < L.phrases.length ? L.phrases[i + 1].a : null; }
+  function window(L, p) { const ons = onsetsOf(L); return ons ? PT.landingNote(ons, p, nextA(L, p)) : null; }
+
+  // the soloist's pan for a loop: from up to 20 s around the loop's middle (a small copy of the PCM)
+  function panFor(songId, L) {
+    const k = songId + '|' + L.a.toFixed(3) + '|' + L.b.toFixed(3);
+    if (pans.has(k)) return pans.get(k);
+    const pcm = E.pcm;
+    if (!pcm) return undefined;
+    const mid = (L.a + L.b) / 2, half = Math.min(10, (L.b - L.a) / 2), a = Math.max(0, mid - half), b = mid + half;
+    let pan = null;
+    try { pan = PT.estimatePan(pcm.slice(a, b), a, b); } catch (e) { pan = null; }
+    pans.set(k, pan);
+    return pan;
+  }
+  const keyOf = (songId, w, c, pan) => songId + '|' + w.t.toFixed(4) + '|' + w.s1.toFixed(3) + '|' + c + '|' + (pan == null ? 'm' : pan.toFixed(2));
+
+  function ready() { return !!E.buffer && E.buffer === buf && Date.now() - loadedAt > 2200 && !(SLP.ear && SLP.ear.tuningState && SLP.ear.tuningState.running); }
+
+  function autoOf(L, p, w, enqueue) {
+    if (!E.buffer) return undefined;
+    const s = S.song(), pan = panFor(s.id, L);
+    if (pan === undefined) return undefined;
+    const key = keyOf(s.id, w, cents(), pan);
+    if (cache.has(key)) return cache.get(key);
+    if (enqueue !== false && !queued.has(key)) { queued.add(key); queue.push({ key, songId: s.id, t: w.t, s0: w.s0, s1: w.s1, pan }); pump(); }
+    return undefined;
+  }
+  function of(L, p) {
+    if (!L || !p) return null;
+    const w = window(L, p);
+    if (!w) return null;
+    const auto = autoOf(L, p, w);
+    const own = p.landing && p.landing.src === 'owner' && Math.abs(p.landing.t - w.t) < 0.005 ? p.landing : null;
+    if (own) {
+      const midi = own.midi != null ? own.midi : auto ? auto.midi : null;
+      return { t: w.t, s0: w.s0, s1: w.s1, stop: w.stop, midi, pc: midi == null ? null : ((midi % 12) + 12) % 12, conf: auto ? auto.conf : null,
+        src: 'owner', skip: !!own.skip, margin: auto ? auto.margin : null, agree: auto ? auto.agree : null, auto: auto || null };
+    }
+    if (auto === undefined) return undefined;
+    if (auto === null || auto.midi == null) return null;
+    return Object.assign({ s0: w.s0, s1: w.s1, stop: w.stop, src: 'auto', skip: false, auto }, auto, { t: w.t });
+  }
+  // What the phrase list and the Phrase inspector say about a phrase's landing note:
+  //   { state: 'ok' | 'pending' | 'none' | 'skip' | 'noaudio', text ('lands on D · 3 of Bb7'), short ('D · 3'), how ('automatic' |
+  //     'automatic, unsure' | 'checked by you'), l, q, lc, notes: the 12 notes over the chord for a correction [{ midi, pc, note, label }] }
+  function describe(L, p, grid) {
+    const T = SLP.theory;
+    if (!p) return { state: 'none', text: '', short: '' };
+    const w = window(L, p);
+    if (!w) return { state: 'none', text: onsetsOf(L) ? 'no clear last note' : 'no detected notes (Re-detect)', short: '' };
+    const l = of(L, p);
+    if (l === undefined) return E.buffer ? { state: 'pending', text: 'finding the landing note…', short: '…' } : { state: 'noaudio', text: 'load the audio to find the landing note', short: '' };
+    if (l === null) return { state: 'none', text: 'no clear last note', short: '' };
+    const lc = grid ? T.landingChord(grid, l.t) : null, q = lc && l.pc != null ? T.landingQuestion(lc, l.pc) : null;
+    const note = q ? q.note : T.pcName(l.pc, false);
+    const how = l.src === 'owner' ? 'checked by you' : l.conf === 'low' ? 'automatic, unsure' : 'automatic';
+    const notes = [];
+    const root = q ? q.root : l.pc, base = l.midi != null ? l.midi : 60 + root;
+    for (let s = 0; s < 12; s++) {
+      const pc = (root + s) % 12;
+      let m = base - (((base - pc) % 12) + 12) % 12;
+      if (base - m > 6) m += 12;
+      notes.push({ midi: m, pc, note: T.pcName(pc, q ? q.sharps : false), label: q ? T.shortLabel(T.degreeLabel(q.chord, s)) : '' });
+    }
+    if (l.skip) return { state: 'skip', text: 'skipped in the landing drill', short: 'skipped', how, l, q, lc, notes };
+    const deg = q ? T.shortLabel(q.label) + (lc.coming ? ' of the coming ' : ' of ') + q.chord : '';
+    return { state: 'ok', text: 'lands on ' + note + (deg ? ' · ' + deg : ''), short: note + (q ? ' · ' + T.shortLabel(q.label) : ''), how, l, q, lc, notes };
+  }
+  function want(loops) { for (const L of loops || []) for (const p of L.phrases) of(L, p); }
+  function progress(loops) {
+    let done = 0, total = 0;
+    for (const L of loops || []) for (const p of L.phrases) {
+      const w = window(L, p);
+      if (!w) continue;
+      total++;
+      if (autoOf(L, p, w, false) !== undefined) done++;
+    }
+    return { done, total, running: pumping || queue.length > 0 };
+  }
+
+  function notify(force) {
+    const now = Date.now();
+    if (!force && now - notifyT < 150) return;
+    notifyT = now;
+    if (onChange) onChange();
+  }
+  function pump() {
+    if (pumping) return;
+    pumping = true;
+    setTimeout(step, 0);
+  }
+  function step() {
+    if (!queue.length) { pumping = false; notify(true); return; }
+    if (!ready()) { setTimeout(step, 300); return; }
+    const j = queue.shift();
+    queued.delete(j.key);
+    if (j.songId !== S.song().id || cache.has(j.key)) { setTimeout(step, 0); return; }
+    const pcm = E.pcm, t0 = performance.now();
+    let r = null;
+    try {
+      const x = pcm.slice(Math.max(0, j.t - 0.35), j.s1 + 0.15);
+      r = PT.estimate(x, j.t, j.s0, j.s1, { cents: Number(j.key.split('|')[3]) || 0, pan: j.pan });
+      r.t = j.t;
+    } catch (e) { r = null; }
+    const ms = performance.now() - t0;
+    stats.ms.push(Math.round(ms * 10) / 10);
+    if (stats.ms.length > 400) stats.ms.shift();
+    stats.computed++;
+    cache.set(j.key, r && r.midi != null ? r : null);
+    notify(!queue.length);
+    setTimeout(step, 0);
+  }
+
+  function init(o) {
+    E = o.engine; S = o.store; onChange = o.onChange;
+    E.on('loaded', (d) => {
+      queue.length = 0; queued.clear();
+      if (d && d.decoded) { loadedAt = Date.now(); buf = E.buffer; setTimeout(() => notify(true), 2300); }
+      else buf = null;
+    });
+    if (E.buffer) { buf = E.buffer; loadedAt = Date.now(); }
+  }
+
+  SLP.landing = { init, of, want, progress, describe, window: (L, p) => window(L, p), stats, clear() { cache.clear(); pans.clear(); queue.length = 0; queued.clear(); } };
 })();
 // ---- app/ear.js ----
 /* SLP.ear — the Ear tab: drill A "Degree over the chord" (DRILLS-SPEC.md, phase 1: Comp and Drone contexts; phase 2: Song).
@@ -10564,6 +11267,15 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  * (manual; a drag or a run of steps = one undo step), Auto (back to the detected value), Check (the chord's root as a
  * sustained tone for 2 s over a bar of the recording under that chord; the tone alone without audio).
  *   tuningState    test hook: { running, last: { songId, cents, confidence, frames, ms } | null }
+ * Kelly's landing note (the landing-note drill, DRILLS-SPEC.md "Landing-note drill as built"): a detected phrase of the active loop
+ * (or of every loop inside the form) plays from the recording and stops right after its last note (SLP.landing: the pitch of
+ * that note, automatic or corrected by the owner); he sings it and names its degree over the chord (T.landingChord: over the
+ * COMING chord when the note anticipates a change, either answer accepted). Silence after the stop, or the note echoed as a
+ * tuned tone. The phrase plays at the transport speed when the engine's smooth render for it is already cached
+ * (SLP.engine.renderFor, read only), otherwise at 100 % (said). The asked phrase is outlined on the waveform and phrase lane
+ * (SLP.wave.mark: a drawing only; the loop / phrase selection is never touched). After the reveal "Not right? Fix it" stores
+ * the true note (or Skip this phrase always) on the phrase (S.setLanding: synced, undoable).
+ *   drillKind()    'landing' | 'degree' (drills.drill, or automatic: landing when there is decoded audio and detected phrases)
  * Per song (synced, undoable): song.drills via SLP.store.setDrills. Per viewer: register, tone, the list's open state
  * (prefs), and the answer history (localStorage 'solo-loop-player.ear.history', last 300, never synced; weights only).
  */
@@ -10580,7 +11292,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const KEYHINT = { 0: '1', 1: '⇧2', 2: '2', 3: '⇧3', 4: '3', 5: '4', 6: '⇧5', 7: '5', 8: '⇧6', 9: '6', 10: '⇧7', 11: '7' };
   let api = null;
   const ses = { on: false, phase: 'idle', q: null, picked: null, last: null, timers: [], songId: null, heard: false, skipped: [], events: null,
-    bar: null, lastBar: null };
+    bar: null, lastBar: null, drill: 'degree', lq: null, lastKey: null, plan: null, fixOpen: false, accepted: null };
 
   // ---------- history (per viewer, local) ----------
   function history() { try { const a = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
@@ -10624,6 +11336,55 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function isActive() {
     const phone = SLP.phone && SLP.phone.on;
     return phone ? $('#app').dataset.ptab === 'ear' : U.prefs.get('inspectorTab') === 'ear';
+  }
+
+  // ---------- which drill ----------
+  const LD = () => drills().landing || S.defaultDrills().landing;
+  const hasPhrases = () => song().loops.some((L) => L.phrases.length > 0);
+  function drillKind() { const d = drills().drill; return d || (buffer() && hasPhrases() ? 'landing' : 'degree'); }
+  const loopById = (id) => song().loops.find((L) => L.id === id) || null;
+
+  // ---------- Kelly's landing note: candidates ----------
+  // the loops whose phrases are asked: the active loop, or (All loops in the form) every loop overlapping the form that has
+  // phrases, the active one first
+  function phraseLoops() {
+    const s = song(), cur = S.loop();
+    if (LD().from !== 'form') return [cur];
+    const g = s.grid, fr = g && g.bars && g.bars.length > 1 ? GH.formRange(g) : null;
+    let t0 = -Infinity, t1 = Infinity;
+    if (fr) { t0 = g.bars[Math.max(0, Math.min(g.bars.length - 1, fr.start))]; t1 = g.bars[Math.max(0, Math.min(g.bars.length - 1, fr.end))]; }
+    return [cur].concat(s.loops.filter((L) => L !== cur)).filter((L) => L === cur || (L.phrases.length && L.b > t0 && L.a < t1));
+  }
+  // every phrase with a usable landing note under a readable chord; notes heard in two overlapping loops count once
+  function landingCands() {
+    const g = song().grid, out = [], seen = new Set();
+    let pending = 0;
+    for (const L of phraseLoops()) L.phrases.forEach((p, i) => {
+      const l = SLP.landing.of(L, p);
+      if (l === undefined) { pending++; return; }
+      if (!l || l.pc == null) return;
+      const lc = T.landingChord(g, l.t);
+      if (!lc) return;
+      const k = Math.round(l.t * 50);
+      if (seen.has(k)) return;
+      seen.add(k);
+      const q = T.landingQuestion(lc, l.pc);
+      out.push({ key: L.id + '|' + p.id, loopId: L.id, phraseId: p.id, no: i + 1, loopName: L.name, l, lc, q, conf: l.conf, src: l.src, skip: l.skip,
+        chord: q.chord, semis: q.semis, other: q.other });
+    });
+    return { cands: out, pending };
+  }
+  const landingOpts = () => ({ unsure: !!LD().unsure, set: (c) => setOf(c) });
+  // { ok } or { ok: false, text } (why the landing drill cannot ask now, for the prompt and the status line)
+  function landingState() {
+    if (!buffer()) return { ok: false, text: api && api.engine.hasAudio ? 'The recording is still being decoded: the landing notes come after it.' : 'Load the recording: this drill plays Kelly\'s phrases from it.' };
+    const loops = phraseLoops(), form = LD().from === 'form';
+    if (!loops.some((L) => L.phrases.length)) return { ok: false, text: form ? 'No phrases detected in the loops of the form yet: detect them (Phrases, D).' : 'No phrases detected in this loop yet: detect them (Phrases, D), or choose All loops in the form.' };
+    if (!loops.some((L) => L.phrases.length && Array.isArray(L.onsets) && L.onsets.length)) return { ok: false, text: 'These phrases have no detected notes stored: Re-detect the loop (Phrases) to find the landing notes.' };
+    const { cands, pending } = landingCands(), o = landingOpts();
+    if (cands.some((c) => T.eligibleLanding(c, o))) return { ok: true, pending };
+    if (pending) { const pr = SLP.landing.progress(loops); return { ok: false, busy: true, text: 'Finding the landing notes… ' + pr.done + ' of ' + pr.total }; }
+    return { ok: false, text: 'No landing note to ask: the notes found are unsure, skipped or outside the answer set (try Include unsure notes, or Answers: All).' };
   }
 
   // ---------- sound plans ----------
@@ -10684,16 +11445,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   function start() {
     if (!ready()) { status(NEED + '.'); return; }
+    const kind = drillKind();
+    if (kind === 'landing') { const st = landingState(); if (!st.ok) { status(st.text); render(); return; } }
     const E = api.engine;
     if (E.state.playing) E.pause(); // the drill and loop playback never sound together
-    ses.on = true; ses.songId = song().id; ses.last = null; ses.lastBar = null;
+    ses.on = true; ses.songId = song().id; ses.last = null; ses.lastBar = null; ses.drill = kind; ses.lastKey = null;
     next();
   }
   function stop(reason) {
     if (!ses.on && ses.phase === 'idle') return;
     clearTimers();
     A.stop();
-    ses.on = false; ses.phase = 'idle'; ses.q = null; ses.picked = null; ses.bar = null;
+    ses.on = false; ses.phase = 'idle'; ses.q = null; ses.picked = null; ses.bar = null; ses.lq = null; ses.plan = null; ses.fixOpen = false; ses.accepted = null;
+    mark(null);
     if (reason === 'play') status('Ear drill ended: playback started.');
     else if (reason === 'tab') { /* leaving the tab: quietly */ }
     render();
@@ -10701,6 +11465,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function next() {
     if (!ses.on) { start(); return; }
     clearTimers();
+    if (ses.drill === 'landing') { nextLanding(); return; }
     const r = T.nextQuestion({ chords: activeChords(), set: drills().answerSet, history: history(), last: ses.last,
       rng: Math.random, low: register()[0], high: register()[1] });
     ses.skipped = r.skipped;
@@ -10747,14 +11512,23 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (ses.phase === 'revealed') return;
     if (ses.phase !== 'answer') { status(drills().singFirst && ses.heard ? 'Sing down to the root first, then answer.' : 'Wait for the note, then answer.'); return; }
     ses.picked = semis;
+    if (ses.drill === 'landing') { answerLanding(semis); return; }
     const e = { t: Date.now(), chord: ses.q.chord, semis: ses.q.semis, answered: semis };
     if (mode() === 'song') e.bar = ses.bar.label;
     pushHistory(e);
     setPhase('revealed');
   }
-  function repeat() { if (ses.on && ses.q) playQuestion(); }
+  function repeat() { if (ses.on && ses.q) { if (ses.drill === 'landing') playLanding(); else playQuestion(); } }
   function context() {
     if (!ses.on || !ses.q) return;
+    if (ses.drill === 'landing') {
+      if (!ses.heard) { playLanding(); return; }
+      clearTimers();
+      const plan = landingPlan(ses.lq, 'phrase');
+      if (plan) { sound(plan.events); mark(plan); }
+      if (ses.phase !== 'revealed') setPhase('answer');
+      return;
+    }
     if (!ses.heard) { playQuestion(); return; } // the note has not sounded yet: the whole question again
     clearTimers();
     sound(contextEvents(T.parseChord(ses.q.chord), false).events);
@@ -10763,10 +11537,127 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function hear() {
     if (!ses.on || !ses.q) return;
     if (ses.phase !== 'revealed') { status('Hear it plays the answer: answer first.'); return; }
+    if (ses.drill === 'landing') {
+      const plan = landingPlan(ses.lq, 'hear');
+      if (plan) { clearTimers(); sound(plan.events); mark(plan); }
+      return;
+    }
     const q = ses.q, b = Math.max(0.5, beatSec()), root = q.semis ? q.midi - q.semis : q.midi - 12, tb = timbre();
     sound([{ t: 0, kind: 'tone', midi: root, dur: b, timbre: tb }, { t: b, kind: 'tone', midi: q.midi, dur: b, timbre: tb },
       { t: 2 * b, kind: 'tone', midis: [root, q.midi], dur: 2 * b, timbre: tb, vel: 0.8 }]);
   }
+  // ---------- Kelly's landing note: questions ----------
+  function nextLanding() {
+    const { cands } = landingCands();
+    const c = T.pickLanding(cands, Object.assign({ rng: Math.random, last: ses.lastKey, history: history() }, landingOpts()));
+    if (!c) { const st = landingState(); status(st.text || 'No landing note to ask.'); stop(); return; }
+    ses.lastKey = c.key; ses.lq = c; setLq(c);
+    ses.picked = null; ses.heard = false; ses.fixOpen = false; ses.accepted = null; ses.phase = 'listen';
+    ses.last = { chord: c.q.chord, semis: c.q.semis };
+    playLanding(true);
+  }
+  function setLq(c) { ses.q = { chord: c.q.chord, root: c.q.root, semis: c.q.semis, label: c.q.label, sharps: c.q.sharps, midi: c.l.midi }; }
+  const pct = (r) => Math.round(r * 100) + ' %';
+  // The sound of a landing question. kind: 'question' (the phrase, then silence or the echo), 'phrase' (the phrase alone),
+  // 'hear' (the end of the phrase with the tuned tone on top of the landing note, from its attack).
+  function landingPlan(c, kind) {
+    const E = api.engine, s = song(), L = c && loopById(c.loopId), p = L && L.phrases.find((x) => x.id === c.phraseId);
+    if (!p || !E.buffer) return null;
+    const l = c.l, g = s.grid, beat = GH.beatLength(g, l.t), bar = beat * bpb();
+    const start = kind === 'hear' ? Math.max(p.a, l.t - 2 * beat) : LD().play === 'bar' ? Math.max(p.a, l.t - bar) : p.a;
+    const stop = Math.max(start + 0.1, l.stop);
+    const want = s.rate;
+    let src = E.renderFor(start, stop, want), slow = false;
+    if (!src) { src = { buffer: E.buffer, base: 0, rate: 1 }; slow = true; }
+    const rate = src.rate, T0 = (stop - start) / rate, b = beat / rate;
+    const ev = [{ t: 0, kind: 'rec', buffer: src.buffer, base: src.base, rate, offset: start, dur: stop - start, db: 0, fadeOut: 0.03 }];
+    let end = T0, echoAt = null;
+    if (kind === 'question' && LD().after === 'echo' && l.midi != null) {
+      echoAt = T0 + 0.25;
+      ev.push({ t: echoAt, kind: 'tone', midi: l.midi, dur: Math.max(0.8, 2 * b), timbre: timbre() });
+      end = echoAt + Math.max(0.8, 2 * b);
+    }
+    if (kind === 'hear' && l.midi != null) {
+      const at = Math.max(0, (l.t - start) / rate), d = Math.max(1.2, 2 * b);
+      ev.push({ t: at, kind: 'tone', midi: l.midi, dur: d, timbre: timbre(), vel: 0.8 });
+      end = Math.max(end, at + d);
+    }
+    const answerAt = drills().singFirst ? end + 2 * b : T0;
+    return { events: ev, stopAt: T0, end, answerAt, rate, slow, want, start, stop, beat: b, echoAt, a: p.a, b: p.b };
+  }
+  function playLanding(fresh) {
+    clearTimers();
+    const plan = landingPlan(ses.lq, 'question');
+    if (!plan) { status('That phrase is gone: next question.'); nextLanding(); return; }
+    ses.plan = plan;
+    const lead = sound(plan.events);
+    mark(plan);
+    if (fresh) status(plan.slow && Math.abs(plan.want - 1) >= 0.005 ? 'Played at 100 %: the smooth render for ' + pct(plan.want) + ' is not ready for this phrase (it is made while its loop plays at that speed).'
+      : 'Phrase ' + ses.lq.no + (LD().from === 'form' ? ' of "' + ses.lq.loopName + '"' : '') + (Math.abs(plan.rate - 1) >= 0.005 ? ' at ' + pct(plan.rate) : '') + ': sing its last note' + (drills().singFirst ? ' before the answers open.' : '.'));
+    if (ses.phase !== 'revealed') setPhase('listen');
+    later(lead + plan.stopAt, () => { ses.heard = true; if (ses.phase === 'listen') setPhase(drills().singFirst ? 'sing' : 'answer'); });
+    later(lead + plan.answerAt, () => { if (ses.phase !== 'revealed') setPhase('answer'); });
+  }
+  function landingWhere(c) {
+    const lc = c.lc;
+    return 'bar ' + lc.barInChorus + (lc.formChorus ? ', chorus ' + lc.formChorus : '');
+  }
+  function answerLanding(semis) {
+    const c = ses.lq, q = c.q, acc = T.landingAccepts(q, semis);
+    ses.accepted = acc;
+    pushHistory({ t: Date.now(), kind: 'landing', key: c.key, chord: q.chord, semis: q.semis, answered: acc ? q.semis : semis, bar: 'phrase ' + c.no + ' · ' + landingWhere(c) });
+    setPhase('revealed');
+    if (q.other) status('The note comes just before the change to ' + q.chord + ', so it is heard as part of ' + q.chord + ' (an anticipation); naming it over ' + q.other.chord + ' (' + T.shortLabel(q.other.label) + ') counts too.');
+    else if (c.src === 'auto' && c.conf === 'low') status('The detector is unsure of this note: check it with Hear it, and Fix it if it is wrong.');
+  }
+  // the 12 notes over the question's chord for "Not right? Fix it" (the octave nearest the detected note)
+  function fixNotes(c) {
+    const q = c.q, base = c.l.midi != null ? c.l.midi : 60 + q.root;
+    const out = [];
+    for (let s = 0; s < 12; s++) {
+      const pc = (q.root + s) % 12;
+      let m = base - (((base - pc) % 12) + 12) % 12;
+      if (base - m > 6) m += 12;
+      out.push({ semis: s, pc, midi: m, note: T.pcName(pc, q.sharps), label: T.shortLabel(T.degreeLabel(q.chord, s)) });
+    }
+    return out;
+  }
+  function fixLanding(v) {
+    const c = ses.lq;
+    if (!c) return;
+    let changed = false;
+    if (v === 'skip') changed = S.setLanding(c.loopId, c.phraseId, { t: c.l.t, skip: true });
+    else if (v === 'auto') changed = S.setLanding(c.loopId, c.phraseId, null);
+    else changed = S.setLanding(c.loopId, c.phraseId, { t: c.l.t, midi: v });
+    ses.fixOpen = false;
+    refreshLq();
+    const L = loopById(c.loopId), p = L && L.phrases.find((x) => x.id === c.phraseId);
+    if (!changed) { render(); return; }
+    if (v === 'skip') status('Phrase ' + c.no + ' will not be asked again (Phrase tab → Landing → Automatic brings it back). Cmd+Z undoes it.');
+    else if (v === 'auto') status('Phrase ' + c.no + ': back to the automatic note.');
+    else status('Saved: phrase ' + c.no + ' lands on ' + T.pcName(v % 12, c.q.sharps) + ' (checked by you). Cmd+Z undoes it.');
+    if (p) render();
+  }
+  // the asked question follows a correction / undo of its phrase's landing
+  function refreshLq() {
+    const c = ses.lq;
+    if (!c) return;
+    const L = loopById(c.loopId), p = L && L.phrases.find((x) => x.id === c.phraseId);
+    if (!p) return;
+    const l = SLP.landing.of(L, p);
+    if (!l || l.pc == null) return;
+    if (l.pc === c.l.pc && l.src === c.l.src && l.skip === c.l.skip && l.midi === c.l.midi) return;
+    const lc = T.landingChord(song().grid, l.t) || c.lc;
+    c.l = l; c.lc = lc; c.q = T.landingQuestion(lc, l.pc); c.src = l.src; c.skip = l.skip; c.conf = l.conf; c.chord = c.q.chord; c.semis = c.q.semis; c.other = c.q.other;
+    setLq(c);
+    if (ses.phase === 'revealed' && ses.picked != null) ses.accepted = T.landingAccepts(c.q, ses.picked);
+  }
+  // the asked phrase outlined on the waveform and the phrase lane (a drawing only: the selection is not touched)
+  function mark(plan) {
+    if (!SLP.wave || !SLP.wave.mark) return;
+    SLP.wave.mark(plan ? { a: plan.a, b: Math.max(plan.b, plan.stop) } : null);
+  }
+
   function status(msg, warn) { if (api) api.status(msg, warn); }
 
   // ---------- tuning ----------
@@ -10930,16 +11821,37 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       }
     }
     const on = ses.on && ses.phase === 'answer', rev = ses.phase === 'revealed';
+    const alsoOk = (s) => ses.drill === 'landing' && ses.lq && rev && ses.lq.q.other && s === ses.lq.q.other.semis && ses.picked === s;
     for (const b of box.children) {
       const s = Number(b.dataset.semis);
       b.disabled = !on && !rev;
       b.classList.toggle('correct', rev && s === q.semis);
-      b.classList.toggle('wrong', rev && ses.picked === s && s !== q.semis);
+      b.classList.toggle('also', !!alsoOk(s));
+      b.classList.toggle('wrong', rev && ses.picked === s && s !== q.semis && !alsoOk(s));
       b.setAttribute('aria-disabled', String(rev));
     }
   }
+  function landingPrompt() {
+    const q = ses.q, c = ses.lq;
+    if (!ses.on || !q || !c) {
+      const st = isActive() ? landingState() : { ok: true };
+      return st.ok ? 'Start (Enter): a phrase of Kelly\'s solo stops on its last note. Sing it, then name its degree over the chord.' : st.text;
+    }
+    const over = (c.q.other ? 'the coming ' : '') + q.chord;
+    if (ses.phase === 'listen') return 'Phrase ' + c.no + ': listen…';
+    if (ses.phase === 'sing' || ses.phase === 'sing-wait') return 'Sing its last note…';
+    if (ses.phase === 'answer') return 'Its last note over ' + over + '? (1–7, Shift for the flat one)';
+    const where = ' · ' + landingWhere(c);
+    const right = c.q.other ? c.q.note + ': ' + T.shortLabel(q.label) + ' of the coming ' + q.chord + ' · ' + T.shortLabel(c.q.other.label) + ' over ' + c.q.other.chord
+      : c.q.note + ' over ' + q.chord + ' = ' + T.shortLabel(q.label);
+    const tail = (c.src === 'owner' ? ' · checked by you' : c.conf === 'low' ? ' · unsure' : '') + where;
+    if (ses.picked == null || ses.picked === q.semis) return right + tail;
+    if (ses.accepted === 'other') return right + tail + ' · you named it over ' + c.q.other.chord + ': right too';
+    return right + tail + ' · you said ' + T.degreeLabel(q.chord, ses.picked);
+  }
   function promptText() {
     const q = ses.q;
+    if (shownDrill() === 'landing') return landingPrompt();
     if (!ses.on || !q) return 'Start (Enter): one bar of the chord, then one note. Name its degree over the chord.';
     const note = T.pcName(q.root + q.semis, q.sharps);
     if (ses.phase === 'listen') return q.chord + ': listen…';
@@ -10961,12 +11873,36 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     ol.textContent = '';
     if (!items.length) { ol.append(h('li', { class: 'ear-none', text: 'No answers yet on this device.' })); return; }
     for (const e of items) {
+      if (!e || typeof e.chord !== 'string') continue;
       const c = T.parseChord(e.chord);
       const note = c ? T.pcName(c.root + e.semis, c.sharps) : '?', lab = c ? T.shortLabel(T.degreeLabel(c, e.semis)) : String(e.semis);
       const you = c && typeof e.answered === 'number' ? T.shortLabel(T.degreeLabel(c, e.answered)) : '–';
       ol.append(h('li', null, h('span', { class: 'el-q', text: e.chord + ' · ' + note + ' · ' + lab }),
         h('span', { class: 'el-a' + (e.answered === e.semis ? '' : ' diff'), text: 'you: ' + you }),
         typeof e.bar === 'string' ? h('span', { class: 'el-b', text: e.bar.slice(0, 40), title: 'The bar of the recording under the note' }) : null));
+    }
+  }
+  const shownDrill = () => (ses.on ? ses.drill : drillKind());
+  // "Not right? Fix it" (landing drill, after the reveal): the 12 notes over the question's chord, Skip this phrase always,
+  // and Automatic when the owner had set it
+  function renderFix(land) {
+    const row = $('#earFixRow'), show = land && ses.on && ses.phase === 'revealed' && !!ses.lq;
+    row.hidden = !show;
+    if (!show) return;
+    const c = ses.lq, btn = $('#earFixBtn'), box = $('#earFix');
+    btn.setAttribute('aria-expanded', String(ses.fixOpen));
+    box.hidden = !ses.fixOpen;
+    $('#earFixAuto').hidden = c.src !== 'owner';
+    const sig = c.key + '#' + c.q.chord + '#' + c.l.pc + '#' + c.l.midi;
+    const chips = $('#earFixChips');
+    if (chips.dataset.sig !== sig) {
+      chips.dataset.sig = sig;
+      chips.textContent = '';
+      for (const n of fixNotes(c)) {
+        const b = h('button', { type: 'button', class: 'ear-chip fix-chip', 'data-midi': String(n.midi), 'aria-pressed': String(n.pc === c.l.pc),
+          title: 'Kelly\'s note was ' + n.note + ' (' + n.label + ' over ' + c.q.chord + '): store it on this phrase' }, h('b', { text: n.note }), ' ' + n.label);
+        chips.append(b);
+      }
     }
   }
   function render() {
@@ -10977,7 +11913,23 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     $('#earOff').hidden = ok;
     $('#earOn').hidden = !ok;
     if (!ok) return;
-    const d = drills();
+    const d = drills(), kind = shownDrill(), land = kind === 'landing';
+    if (ses.on && land) refreshLq();
+    setSeg($('#earDrill'), kind);
+    $('#earOn').dataset.drill = kind;
+    $('#earOn').classList.toggle('running', ses.on);
+    const ld = LD();
+    setSeg($('#earFrom'), ld.from);
+    setSeg($('#earPlay'), ld.play);
+    setSeg($('#earAfter'), ld.after);
+    $('#earUnsure').setAttribute('aria-pressed', String(!!ld.unsure));
+    const tt = land ? 'Kelly\'s landing note' : 'Degree over the chord';
+    if ($('#earTitleT').textContent !== tt) $('#earTitleT').textContent = tt;
+    U.label($('#earContext'), land ? 'Phrase again' : 'Chord again');
+    $('#earContext').title = land ? 'The phrase again, without the echo (Space)' : 'The bar of the chord again, without the note (Space)';
+    $('#earRepeat').title = land ? 'The question again: the phrase (and the echo when chosen) (R)' : 'The question again: the bar and the note (R)';
+    $('#earHear').title = land ? 'Hear it: the end of the phrase with the detected note as a tone on top of its last note (H)' : 'Hear it: the root, then the note, then both (H)';
+    renderFix(land);
     setSeg($('#earCtx'), d.context);
     const songRow = $('#earSongRow');
     songRow.hidden = d.context !== 'song';
@@ -11004,10 +11956,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const st = $('#earStart');
     U.label(st, ses.on ? 'End' : 'Start');
     st.classList.toggle('primary', !ses.on);
+    const lst = land && !ses.on && isActive() ? landingState() : { ok: true }; // (off screen: no candidate scan, nothing queued)
+    st.disabled = !ses.on && !lst.ok;
     st.title = ses.on ? 'End the drill (Esc)' : 'Start the drill (Enter): Space, R, H and the digits belong to the drill while it runs';
     const pr = $('#earPrompt'), pt = promptText();
     if (pr.textContent !== pt) { pr.textContent = pt; pr.title = pt; }
     pr.classList.toggle('revealed', ses.phase === 'revealed');
+    pr.classList.toggle('off', land && !ses.on && !lst.ok);
     $('#earRepeat').disabled = !ses.on;
     $('#earContext').disabled = !ses.on;
     $('#earHear').disabled = !(ses.on && ses.phase === 'revealed');
@@ -11091,6 +12046,23 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       S.setDrills({ answerSet: [...set] });
     });
     $('#earLastBtn').addEventListener('click', () => { U.prefs.set('earLast', !U.prefs.get('earLast')); render(); });
+    // Kelly's landing note
+    segClicks($('#earDrill'), (v) => {
+      if (v === shownDrill() && drills().drill === v) return;
+      if (ses.on) { stop(); }
+      S.setDrills({ drill: v }, { label: 'ear: drill' });
+      render();
+      if (v === 'landing') { const st = landingState(); if (!st.ok) status(st.text); }
+    });
+    const setLD = (patch, label) => S.setDrills({ landing: Object.assign({}, LD(), patch) }, { label });
+    segClicks($('#earFrom'), (v) => setLD({ from: v }, 'ear: landing from'));
+    segClicks($('#earPlay'), (v) => setLD({ play: v }, 'ear: landing play'));
+    segClicks($('#earAfter'), (v) => setLD({ after: v }, 'ear: after the stop'));
+    $('#earUnsure').addEventListener('click', () => setLD({ unsure: !LD().unsure }, 'ear: unsure notes'));
+    $('#earFixBtn').addEventListener('click', () => { ses.fixOpen = !ses.fixOpen; render(); if (ses.fixOpen) { const f = $('#earFixChips button'); if (f) f.focus(); } });
+    $('#earFixChips').addEventListener('click', (e) => { const b = e.target.closest('button[data-midi]'); if (b) fixLanding(Number(b.dataset.midi)); });
+    $('#earFixSkip').addEventListener('click', () => fixLanding('skip'));
+    $('#earFixAuto').addEventListener('click', () => fixLanding('auto'));
     const tn = $('#earTune');
     tn.addEventListener('input', () => { S.setTuning({ cents: Number(tn.value) }, { key: 'ear-tuning' }); renderTuning(); });
     tn.addEventListener('pointerup', () => S.endGesture());
@@ -11107,10 +12079,25 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
 
   SLP.ear = { init, render, key, start, stop, next, answer, repeat, context, hear, isActive, clearHistory, history, check, detectTuning: () => detectTuning(++tune.token),
+    drillKind, landingState, landingCands, fixLanding,
+    // test hook: ask this candidate next (key = loopId|phraseId), as if the picker had chosen it
+    ask(key) {
+      if (!ses.on) start();
+      if (!ses.on || ses.drill !== 'landing') return false;
+      const c = landingCands().cands.find((x) => x.key === key);
+      if (!c) return false;
+      clearTimers();
+      ses.lastKey = c.key; ses.lq = c; setLq(c);
+      ses.picked = null; ses.heard = false; ses.fixOpen = false; ses.accepted = null; ses.phase = 'listen';
+      playLanding(true);
+      return true;
+    },
+    get landing() { return ses.lq ? { key: ses.lq.key, loopId: ses.lq.loopId, phraseId: ses.lq.phraseId, no: ses.lq.no, l: Object.assign({}, ses.lq.l, { auto: undefined }), q: Object.assign({}, ses.lq.q), lc: Object.assign({}, ses.lq.lc),
+      plan: ses.plan ? Object.assign({}, ses.plan, { events: undefined }) : null, accepted: ses.accepted } : null; },
     get tuningState() { return { running: tune.running, last: tune.last ? Object.assign({}, tune.last) : null }; },
     get running() { return ses.on; },
     get state() {
-      return { on: ses.on, phase: ses.phase, q: ses.q ? Object.assign({}, ses.q) : null, picked: ses.picked, skipped: ses.skipped.slice(),
+      return { on: ses.on, drill: ses.on ? ses.drill : drillKind(), phase: ses.phase, q: ses.q ? Object.assign({}, ses.q) : null, picked: ses.picked, skipped: ses.skipped.slice(),
         events: ses.events ? ses.events.map((e) => (e.buffer ? Object.assign({}, e, { buffer: true }) : e)) : null,
         bar: ses.bar ? Object.assign({}, ses.bar) : null, mode: ses.on ? mode() : null, recPos: A.recPos };
     } };
@@ -12425,7 +13412,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (ix) for (let k = ix[0]; k <= ix[1]; k++) selected.add(L.phrases[k].id);
     const fp = focusPhrase();
     return { loop: L, grid: song().grid, selected, focusId: fp ? fp.id : null, playingId: app.playingId,
-      hasOnsets: !!L.onsets, detecting: !!(app.detecting && app.detecting.loopId === L.id), hasAudio: E.hasAudio };
+      hasOnsets: !!L.onsets, detecting: !!(app.detecting && app.detecting.loopId === L.id), hasAudio: E.hasAudio,
+      landing: (p) => SLP.landing.describe(L, p, song().grid) };
   }
   function flush() {
     renderQueued = false;
@@ -12446,7 +13434,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         tap: app.tap ? { taps: app.tap.taps.length, clean: GH.cleanTaps(app.tap.taps), playing: !!app.st.playing } : null,
         take: takeValid() ? app.take.applied : null, barSel: s.grid ? barSelIndex() : null,
         win: fp ? { text: windowText(fp), fixed: !!fixedBeats(), shift: fp.shift || 0, length: (SHAPE_NAMES[s.practice.length] || lenName(s.practice.length)).toLowerCase() } : null,
-        peaks: E.peaks, play: pi, lenText: pi ? lengthDetail(pi) : '', selected, playhead: E.hasAudio ? E.time : null });
+        peaks: E.peaks, play: pi, lenText: pi ? lengthDetail(pi) : '', selected, playhead: E.hasAudio ? E.time : null,
+        landing: fp ? SLP.landing.describe(L, fp, s.grid) : null });
     }
     if (has('insp') || has('practice')) SLP.ear.render();
     if (has('transport')) P.transport({ song: s, st: app.st, hasAudio: E.hasAudio, engineText: engineText(), smooth: app.st.smooth === 'ready' && app.st.mode === 'buffer' });
@@ -12622,6 +13611,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     renamePhrase: (id, name) => S.renamePhrase(loop().id, id, name),
     refresh: () => queue('all'),
     seek: (t) => { if (!E.hasAudio) return; E.seek(t); W.requestPaint(); },
+    // Kelly's landing note of the inspected phrase: kind 'midi' (the real note), 'skip' (never asked), 'auto' (forget the correction)
+    focusId: () => { const fp = focusPhrase(); return fp ? fp.id : null; },
+    setLanding(kind, midi) {
+      const fp = focusPhrase(), L = loop();
+      if (!fp) return;
+      const w = SLP.landing.window(L, fp);
+      if (!w) { U.status('This phrase has no detected last note to correct.'); return; }
+      const n = L.phrases.indexOf(fp) + 1, T = SLP.theory;
+      const ok = S.setLanding(L.id, fp.id, kind === 'auto' ? null : kind === 'skip' ? { t: w.t, skip: !(fp.landing && fp.landing.skip) } : { t: w.t, midi });
+      if (!ok) { queue('insp'); return; }
+      U.status(kind === 'auto' ? 'Phrase ' + n + ': back to the automatic landing note.' : kind === 'skip' ? (fp.landing && fp.landing.skip ? 'Phrase ' + n + ' is skipped in the landing drill.' : 'Phrase ' + n + ' is asked again in the landing drill.')
+        : 'Phrase ' + n + ' lands on ' + T.pcName(midi % 12, false) + ' (checked by you). Cmd+Z undoes it.');
+    },
     // a click on a cell of the Grid picture: that bar of the chorus under the playhead (or the loop start) is chosen for
     // "Bar line N" and the playhead goes to its start
     gridCell(k) {
@@ -13613,6 +14615,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   $('#phWinL').addEventListener('click', () => slideWindow(-2));
   $('#phWinR').addEventListener('click', () => slideWindow(2));
   // Ear tab (drill A, DRILLS-SPEC.md): its own sounds on the engine's AudioContext; loop playback ends a running drill
+  // Kelly's landing note: the last note of each phrase, estimated lazily (one phrase per task) after a decode
+  SLP.landing.init({ engine: E, store: S, onChange: () => queue('phrases', 'insp') });
   SLP.ear.init({ status: (m, w) => U.status(m, w), engine: E,
     openGrid: () => { U.prefs.set('inspectorTab', 'grid'); if (SLP.phone && SLP.phone.on) SLP.phone.tab('edit'); queue('insp'); } });
   SLP.phone.init({ refresh: () => { queue('all'); W.invalidate(); }, status: (m, w) => U.status(m, w) });
