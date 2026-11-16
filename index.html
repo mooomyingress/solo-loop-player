@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-AyXcS4cR74VNOyMoYD8ovhv2X7rlXQGc8NUSKAeWVuk='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Nu/YH5hHoOVjzaJ5JqRGHLSjUmUxYyzs8vn63MfKypE='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -668,6 +668,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
 .ear-last .el-a { color: var(--faint); }
 .ear-last .el-a.diff { color: var(--warn); }
 .ear-last .ear-none { color: var(--muted); }
+.ear-last .el-b { color: var(--faint); }
+.ear-lvl input[type="range"] { width: 96px; }
+.ear-lvl .num { font: 12px/1 var(--font-mono); color: var(--muted); min-width: 4.2em; font-variant-numeric: tabular-nums; }
+#earSongRow.no-audio > :not(.lbl) { opacity: 0.6; }
 @media (max-height: 820px) { html:not(.is-phone) .insp.ear, html:not(.is-phone) .ear-on { gap: 5px; } html:not(.is-phone) .ear-a { height: 34px; } }
 @container (max-width: 500px) {
   .ef > .lbl:first-child { width: 52px; }
@@ -903,6 +907,10 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .ef .seg { flex: 1 1 auto; min-width: 0; }
   .ef .seg > button { flex: 1 1 0; justify-content: center; padding: 0 6px; font-size: 14px; }
   #earSing { flex: 1 1 100%; justify-content: center; }
+  #earLead, #earQuiet { flex: 1 1 0; justify-content: center; }
+  .ear-lvl input[type="range"] { flex: 1 1 auto; width: auto; min-width: 0; }
+  .ear-lvl .num { font-size: 14px; align-self: center; }
+  .ef > .ear-lvl { order: 5; }
   .ear-chip { height: 44px; min-width: 60px; padding: 0 14px; border-radius: 22px; font-size: 15px; justify-content: center; }
   .ear-q { position: static; border: 0; padding: 0 0 10px; background: transparent; border-bottom: 1px solid var(--line); border-radius: 0; gap: 10px; }
   .ear-qh { flex-wrap: wrap; row-gap: 6px; }
@@ -1444,14 +1452,19 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
         </div>
         <div class="ear-on" id="earOn">
           <div class="ef"><span class="lbl" id="earCtxLbl">Context</span>
-            <span class="seg" id="earCtx" role="radiogroup" aria-labelledby="earCtxLbl" title="What sounds under the note: a synthesised bar of the chord at the grid's tempo">
-              <button type="button" role="radio" aria-checked="false" data-v="comp" title="Comp: bass root on 1 and 3, the 3rd and 7th on 2 and 4, slightly swung">Comp</button><button type="button" role="radio" aria-checked="false" data-v="drone" title="Drone: the root and the 3rd and 7th held">Drone</button>
+            <span class="seg" id="earCtx" role="radiogroup" aria-labelledby="earCtxLbl" title="What sounds under the note: a bar of the recording, or a synthesised bar of the chord at the grid's tempo">
+              <button type="button" role="radio" aria-checked="false" data-v="song" title="Song: one bar of the recording where the chart has this chord, at 100 % speed (without audio: Comp)">Song</button><button type="button" role="radio" aria-checked="false" data-v="comp" title="Comp: bass root on 1 and 3, the 3rd and 7th on 2 and 4, slightly swung">Comp</button><button type="button" role="radio" aria-checked="false" data-v="drone" title="Drone: the root and the 3rd and 7th held">Drone</button>
             </span>
             <span class="grp ef-gap"><span class="lbl" id="earNoteLbl">Note</span>
             <span class="seg" id="earNote" role="radiogroup" aria-labelledby="earNoteLbl" title="When the note sounds">
               <button type="button" role="radio" aria-checked="false" data-v="beat3" title="On beat 3: the chord keeps playing under the note">On beat 3</button><button type="button" role="radio" aria-checked="false" data-v="after" title="After the bar: the bar stops, the note alone over the chord held quietly">After the bar</button>
             </span></span>
             <button type="button" id="earSing" class="ef-gap" aria-pressed="true" title="Sing first: after the note, a silent count of 2 beats (the click on the even beats when Click is on) to sing down to the root before the answers open">Sing first</button>
+          </div>
+          <div class="ef" id="earSongRow"><span class="lbl">Song</span>
+            <button type="button" id="earLead" aria-pressed="false" title="Lead-in: the recording starts one beat before the bar line">Lead-in</button>
+            <span class="grp ef-gap ear-lvl"><label class="lbl" for="earLevel">Level</label><input type="range" id="earLevel" min="-30" max="0" step="1" value="-6" title="The recording's level under the note (0 dB = as loud as loop playback)"><span class="num" id="earLevelV">−6 dB</span></span>
+            <button type="button" id="earQuiet" class="ef-gap" aria-pressed="true" title="Prefer quiet bars: choose among the matching bars with the fewest detected phrases (where the soloist rests); bars without detected phrases come after them">Prefer quiet bars</button>
           </div>
           <div class="ef"><span class="lbl">Chords</span><span class="ear-chips" id="earChords" role="group" aria-label="Chords drilled"></span></div>
           <div class="ef"><span class="lbl" id="earSetLbl">Answers</span>
@@ -4459,6 +4472,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   distinctChords(cells, bpb) → chord symbols of a chart in order of first appearance (split cells through chordParts)
  *   rng(seed)                → a seeded random function (mulberry32), for the question generator and its tests
  *   nextQuestion(o)          → { question: { chord, root, semis, midi, label } | null, skipped: [unparseable symbols] }
+ *   songBars(grid, chord, { duration }) → the bars (or half bars) of the chart holding chord, inside the form (Song context)
+ *   barActivity(seg, loops)  → fraction of the segment covered by detected phrases (0…1) | null (unknown)
+ *   pickBar(cands, { rng, last, quiet, margin }) → the bar for a question (no immediate repeat; quiet bars preferred)
  *   KEY_DEGREES              the drill keys: digit → natural degree, Shift+digit → the flat one, Alt+4 → #11
  *   pcName(pc, sharps) · noteName(midi, sharps)  'Bb' · 'Bb3'
  */
@@ -4655,12 +4671,88 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return { question: { chord: q.c.symbol, root: q.c.root, semis: q.semis, midi, label: degreeLabel(q.c, q.semis), sharps: q.c.sharps }, skipped };
   }
 
+  // ---------- Song context (drill A, phase 2): which bar of the recording sounds under the note ----------
+  const symKey = (s) => { const c = parseChord(s); return c ? c.symbol : String(s == null ? '' : s).trim(); };
+  // songBars(grid, chord, { duration }) → the candidate segments for `chord`, in time order:
+  //   [{ index, part, t0, t1, barStart, barEnd, beat, beat0, beats, whole, barInChorus, formChorus, label }]
+  // Only bars with both bar lines in grid.bars (no extrapolated bars), inside the form (grid.form; no form = every bar), and
+  // (with a duration) ending inside the audio. A bar counts when the chord fills it (one chord, or the same chord twice), or
+  // the half of a split cell that holds it (t0 / t1 = that half; consecutive equal parts merge). Chords compare by their
+  // normalised symbol (Bb7 ≠ Bb9).
+  function songBars(grid, chord, o) {
+    const GH = SLP.beats && SLP.beats.gridHelpers;
+    if (!grid || !GH || !grid.bars || grid.bars.length < 2) return [];
+    const want = symKey(chord), dur = o && o.duration > 0 ? o.duration : null;
+    const bpb = Math.max(1, Math.round(grid.beatsPerBar || 4)), out = [];
+    for (let i = 0; i < grid.bars.length - 1; i++) {
+      const s = grid.bars[i], e = grid.bars[i + 1];
+      if (!(e > s) || s < 0 || (dur != null && e > dur + 0.01)) continue;
+      const b = GH.chordAt(grid, (s + e) / 2);
+      if (!b.inForm || !b.parts.length) continue;
+      const beat = (e - s) / bpb;
+      for (let k = 0; k < b.parts.length; k++) {
+        if (symKey(b.parts[k].chord) !== want) continue;
+        let k2 = k;
+        while (k2 + 1 < b.parts.length && symKey(b.parts[k2 + 1].chord) === want) k2++;
+        const beat0 = b.parts[k].beat, beat1 = k2 + 1 < b.parts.length ? b.parts[k2 + 1].beat : bpb;
+        const whole = beat0 === 0 && beat1 === bpb;
+        const where = 'bar ' + b.barInChorus + (whole ? '' : beat0 === 0 ? ' (1st half)' : ' (2nd half)');
+        out.push({ index: i, part: k, t0: s + beat0 * beat, t1: s + beat1 * beat, barStart: s, barEnd: e, beat, beat0, beats: beat1 - beat0,
+          whole, barInChorus: b.barInChorus, formChorus: b.formChorus, label: b.formChorus ? where + ', chorus ' + b.formChorus : where });
+        k = k2;
+      }
+    }
+    return out;
+  }
+  // barActivity(seg, loops) → the fraction (0…1) of the segment overlapped by detected phrases, or null (unknown).
+  // A loop has activity data when it has phrases or cached detector onsets (detected, maybe with no phrase). It covers the
+  // segment when at least 75 % of the segment lies inside [loop.a, loop.b]; the fraction is measured over that overlap. Several
+  // covering loops (a chorus loop and the whole solo): the highest fraction counts (quiet only when every detection agrees).
+  function barActivity(seg, loops) {
+    let best = null;
+    for (const L of loops || []) {
+      if (!L) continue;
+      const ph = Array.isArray(L.phrases) ? L.phrases : [];
+      if (!ph.length && !Array.isArray(L.onsets)) continue;
+      const lo = Math.max(L.a, seg.t0), hi = Math.min(L.b, seg.t1), span = hi - lo;
+      if (!(span >= 0.75 * (seg.t1 - seg.t0)) || span <= 0) continue;
+      let cov = 0;
+      for (const p of ph) cov += Math.max(0, Math.min(p.b, hi) - Math.max(p.a, lo));
+      const f = Math.min(1, cov / span);
+      best = best == null ? f : Math.max(best, f);
+    }
+    return best;
+  }
+  // pickBar(cands, { rng, last: { index, part } | null, quiet: bool, margin }) → one candidate | null
+  // Never the bar of the previous question when another candidate exists. With quiet (Prefer quiet bars): rank the remaining
+  // candidates with known activity from the least active (ties: earlier first), then those of unknown activity; the pool is
+  // every known candidate within `margin` (default 0.15 = 15 % of the bar) of the quietest one, topped up from the ranking to
+  // at least 2 when there are 2 (so the same bar does not always sound); a random one of the pool. No known activity at all,
+  // or quiet off: a random one of all remaining candidates.
+  const QUIET_MARGIN = 0.15;
+  function pickBar(cands, o) {
+    const opt = o || {}, R = opt.rng || Math.random, last = opt.last, margin = opt.margin == null ? QUIET_MARGIN : opt.margin;
+    if (!cands || !cands.length) return null;
+    let pool = cands.filter((c) => !(last && c.index === last.index && c.part === last.part));
+    if (!pool.length) pool = cands.slice();
+    if (opt.quiet) {
+      const known = pool.filter((c) => c.activity != null).sort((x, y) => x.activity - y.activity || x.t0 - y.t0);
+      if (known.length) {
+        const min = known[0].activity;
+        let q = known.filter((c) => c.activity <= min + margin + 1e-9);
+        if (q.length < 2) q = known.concat(pool.filter((c) => c.activity == null)).slice(0, Math.min(2, pool.length));
+        pool = q;
+      }
+    }
+    return pool[Math.min(pool.length - 1, Math.floor(R() * pool.length))];
+  }
+
   // Drill keys (DRILLS-SPEC.md): 1–7 natural degrees (2 = 9, 4 = 11, 6 = 13 / 6, 7 = maj 7), Shift+digit the flat one
   // (b9, #9/b3, b5/#11, b13, b7), Alt+4 #11.
   const KEY_DEGREES = { plain: { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 }, shift: { 2: 1, 3: 3, 5: 6, 6: 8, 7: 10 }, alt: { 4: 6 } };
 
   SLP.theory = { parseChord, chordTones, degreeLabel, shortLabel, guideTones, guideToneLine, answerSet, distinctChords, rng, nextQuestion,
-    weightOf, PRESETS, KEY_DEGREES, pcName, noteName };
+    weightOf, PRESETS, KEY_DEGREES, pcName, noteName, songBars, barActivity, pickBar, QUIET_MARGIN };
 })();
 // ---- app/anytune.js ----
 /* SLP.anytune — Anytune Pro+ `.atcfg` import/export (lifted from v1, behaviour-identical).
@@ -5116,11 +5208,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   // Ear drills (DRILLS-SPEC.md): per-song settings, synced with the song's practice section (same stamp, same unit in the
   // sync document: practice.v.drills) and undoable like the practice options. answerSet: 'chordTones' | 'colour' | 'all' | an
-  // array of semitone offsets (custom); chords: null = every chord of the chart, else the chosen symbols; context: 'comp' |
-  // 'drone' ('song' is phase 2: kept, played as Comp until then); noteOn: 'beat3' | 'after'. guide / level: phases 2–3.
+  // array of semitone offsets (custom); chords: null = every chord of the chart, else the chosen symbols; context: 'song' |
+  // 'comp' | 'drone' (Song plays a bar of the recording; without decoded audio it falls back to Comp with a status note);
+  // noteOn: 'beat3' | 'after'; level: the recording's level in Song context, dB (−40…0, default −6); leadIn: Song starts one
+  // beat before the bar line; quiet: Song prefers the bars with the least solo activity. guide: phase 3.
+  // Phase 1 saves (no `quiet` field) stored context 'comp' as the default (Song did not exist): they load as 'song'.
   function defaultDrills() {
-    return { answerSet: 'colour', chords: null, context: 'comp', noteOn: 'beat3', singFirst: true,
-      guide: { start: '3', mode: 'with', rhythm: 'half' }, level: -6 };
+    return { answerSet: 'colour', chords: null, context: 'song', noteOn: 'beat3', singFirst: true,
+      guide: { start: '3', mode: 'with', rhythm: 'half' }, level: -6, leadIn: false, quiet: true };
   }
   function normDrills(d) {
     const o = defaultDrills();
@@ -5132,11 +5227,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     }
     if (Array.isArray(d.chords)) o.chords = [...new Set(d.chords.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 24)))].slice(0, 48);
     if (['comp', 'drone', 'song'].includes(d.context)) o.context = d.context;
+    if (d.context === 'comp' && d.quiet === undefined) o.context = 'song'; // a phase 1 save: Comp was the default there
     if (d.noteOn === 'after') o.noteOn = 'after';
     o.singFirst = d.singFirst !== false;
     const g = d.guide && typeof d.guide === 'object' ? d.guide : {};
     o.guide = { start: g.start === '7' ? '7' : '3', mode: ['with', 'mine', 'alt'].includes(g.mode) ? g.mode : 'with', rhythm: g.rhythm === 'beat3' ? 'beat3' : 'half' };
-    o.level = Math.min(0, Math.max(-40, num(d.level, -6)));
+    o.level = Math.round(Math.min(0, Math.max(-40, num(d.level, -6))));
+    o.leadIn = d.leadIn === true;
+    o.quiet = d.quiet !== false;
     return o;
   }
   function normTradeRestore(r) {
@@ -6068,7 +6166,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     changed('practice');
   }
   // Ear drill settings (one undo step per change; a label per control)
-  const DRILL_LABEL = { answerSet: 'ear: answer set', chords: 'ear: chords', context: 'ear: context', noteOn: 'ear: note', singFirst: 'ear: sing first' };
+  const DRILL_LABEL = { answerSet: 'ear: answer set', chords: 'ear: chords', context: 'ear: context', noteOn: 'ear: note', singFirst: 'ear: sing first',
+    level: 'ear: level', leadIn: 'ear: lead-in', quiet: 'ear: quiet bars' };
   function setDrills(patch, opts) {
     const s = song();
     const next = normDrills(Object.assign({}, s.drills, patch || {}));
@@ -6790,7 +6889,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *             pass followed by a turn (gap 'click', or 'phrase' / a bar gap with clicks on) gets the count-in ticks
  *             countIn(s0, pe) (the UI returns the grid beats of the last N beats before pe). 'always' (default) = rev 1.
  *             A ghost's tick at offset 0 is scheduled even when the ghost is decided a little late (up to 10 ms).
- *             ctx (AudioContext or null) · output (master GainNode; tap it for meters)
+ *             ctx (AudioContext or null) · output (master GainNode; tap it for meters) · buffer (the decoded AudioBuffer or
+ *             null; read only, the ear drills' Song context plays bars of it at rate 1 through its own nodes)
  * Events      on(name, fn) → off()
  *             'state' (state object, on any change) · 'loaded' {name, duration, decoded, durationMismatch}
  *             'error' {kind: 'decode'|'media'|'render', message} · 'range' (null, when seek/setLoop dropped the range)
@@ -7796,6 +7896,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     get hasAudio() { return !!objectUrl; },
     get duration() { return duration(); },
     get peaks() { return peaks; },
+    get buffer() { return decoded; }, // the decoded AudioBuffer (read only; the ear drills' Song context plays bars of it at rate 1)
     get pcm() { return decoded ? { sr: decoded.sampleRate, length: decoded.length, channels: Math.min(2, decoded.numberOfChannels), slice } : null; },
     setLoop, setRange, setRate, setLoopOn, setPractice, setClick, prerender, prerenderSet, scrubSnippet, scrubStop,
     play, pause, toggle, seek, restart,
@@ -10074,6 +10175,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   'tone'  the test tone: timbre 'piano' (6 partials, slightly stretched, upper partials decaying faster, 8 ms attack,
  *           exponential decay to −40 dB over ~1.6 s) or 'organ' (sustained, for long notes)
  *   'bass'  plucked bass note (comp) · 'shell' a soft piano voicing (comp) · 'drone' held organ chord, quiet · 'tick' metronome
+ *   'rec'   a stretch of the recording (Song context): { t, kind: 'rec', buffer (AudioBuffer), offset (song seconds), dur, db }
+ *           played at rate 1 from the decoded buffer through its own gain (5 ms fades), at db relative to loop playback's level
+ *           (the drill bus's 0.8 is compensated). One per plan; recPos tells where in the song it is right now.
+ *   get recPos                                → the song time the 'rec' event is playing now, or null (not started / ended)
  * Levels (linear peak of one note before the bus): tone 0.30, bass 0.26, shell 0.10 per note, drone 0.05 per note, tick 0.4 ×
  * the click volume; the drill bus is 0.8. These are guesses made without listening: they need the owner's ears.
  */
@@ -10140,6 +10245,28 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     nodes.push(o);
   }
 
+  // A stretch of the decoded recording at rate 1 (nothing rendered): 5 ms fade in / out, gain = 10^(db / 20) / bus gain.
+  function recording(bus, e, t, dur, nodes) {
+    const buf = e.buffer, off = Math.max(0, Math.min(e.offset || 0, buf.duration - 0.05));
+    const d = Math.max(0.03, Math.min(dur, buf.duration - off));
+    const src = ctx.createBufferSource(), g = ctx.createGain(), lvl = Math.pow(10, (e.db == null ? -6 : e.db) / 20) / 0.8, F = 0.005;
+    src.buffer = buf;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(lvl, t + F);
+    g.gain.setValueAtTime(lvl, t + d - F);
+    g.gain.linearRampToValueAtTime(0, t + d);
+    src.connect(g); g.connect(bus);
+    src.start(t, off, d);
+    src.stop(t + d + 0.02);
+    nodes.push(src);
+    return { at: t, offset: off, dur: d };
+  }
+  function recPos() {
+    if (!cur || !cur.rec || !ctx) return null;
+    const dt = ctx.currentTime - cur.rec.at;
+    return dt < 0 || dt > cur.rec.dur ? null : cur.rec.offset + dt;
+  }
+
   function stop() {
     if (!cur || !ctx) { cur = null; return; }
     const c = cur, now = ctx.currentTime;
@@ -10159,6 +10286,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     bus.gain.value = 0.8;
     bus.connect(out);
     const nodes = [], t0 = ctx.currentTime + LEAD;
+    let rec = null;
     let end = t0;
     for (const e of events || []) {
       const t = t0 + Math.max(0, e.t || 0), dur = Math.max(0.03, e.dur || 0.5), vel = e.vel == null ? 1 : e.vel;
@@ -10168,17 +10296,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       else if (e.kind === 'shell') for (const m of ms) piano(bus, m, t, dur, 0.10 * vel, nodes, 0.6);
       else if (e.kind === 'drone') for (const m of ms) organ(bus, m, t, dur, 0.05 * vel, nodes, 0.06);
       else if (e.kind === 'tick') tick(bus, t, !!e.accent, vel, nodes);
+      else if (e.kind === 'rec' && e.buffer) rec = recording(bus, e, t, dur, nodes);
       end = Math.max(end, t + dur);
     }
-    cur = { bus, nodes, start: t0, end };
+    cur = { bus, nodes, start: t0, end, rec };
     lastEnd = end;
     return { start: t0, end, ctx };
   }
 
-  SLP.earAudio = { play, stop, get playing() { return !!(cur && ctx && ctx.currentTime < lastEnd + 0.1); }, get ctx() { return ctx; } };
+  SLP.earAudio = { play, stop, get playing() { return !!(cur && ctx && ctx.currentTime < lastEnd + 0.1); }, get ctx() { return ctx; }, get recPos() { return recPos(); } };
 })();
 // ---- app/ear.js ----
-/* SLP.ear — the Ear tab: drill A "Degree over the chord" (DRILLS-SPEC.md, phase 1: Comp and Drone contexts).
+/* SLP.ear — the Ear tab: drill A "Degree over the chord" (DRILLS-SPEC.md, phase 1: Comp and Drone contexts; phase 2: Song).
  *
  *   init(api)      api: { status(msg, warn), engine, openGrid() }
  *   render()       refreshes the tab from the song (main.js calls it with the inspector); ends a running drill when the Ear
@@ -10188,8 +10317,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *   start() · stop(reason) · next() · answer(semis) · repeat() · context() · hear()
  *   isActive()     the Ear tab is the tab on screen (desktop inspector tab 'ear', phone tab 'ear')
  *   clearHistory() the per-viewer answer history (More → Clear ear history)
- *   state          test hook: { on, phase, q, picked, events, skipped }
+ *   state          test hook: { on, phase, q, picked, events, skipped, bar, mode, recPos }
  *
+ * Song context (phase 2): one bar of the loaded recording whose chart chord is the question's chord (T.songBars: whole bars,
+ * or the half of a split cell, inside the form; T.pickBar: never the previous question's bar, with "Prefer quiet bars" the
+ * bars least covered by detected phrases, T.barActivity), from the decoded buffer at rate 1 (SLP.engine.buffer, played by
+ * SLP.earAudio's own nodes: the loop engine's state, render cache and playhead are not touched), from the bar line or one
+ * beat before it (Lead-in), at song.drills.level dB. Times follow that bar's own bar lines. On beat 3: the bar keeps playing
+ * under the note (a half bar: the note on its 2nd beat, the chord held quietly by the synth drone once the half ends); after
+ * the bar: the recording stops, the note over the quiet drone. Chord again / R replay the same bar. No decoded audio (or no
+ * matching bar): Comp, said in the status line.
  * Flow per question: one bar of the chord (Comp: bass on 1 and 3, shell voicing on 2 and 4, a swung pickup; Drone: root and
  * shell held) at the grid's tempo → the test tone (on beat 3 under the bar, or after it over a quiet drone), 2 beats →
  * with "Sing first" a silent count of 2 beats (the click on the even beats if the song's click is on) → the answer buttons
@@ -10210,7 +10347,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const GENERIC = 'C7'; // custom chips are labelled as over a dominant chord
   const KEYHINT = { 0: '1', 1: '⇧2', 2: '2', 3: '⇧3', 4: '3', 5: '4', 6: '⇧5', 7: '5', 8: '⇧6', 9: '6', 10: '⇧7', 11: '7' };
   let api = null;
-  const ses = { on: false, phase: 'idle', q: null, picked: null, last: null, timers: [], songId: null, heard: false, skipped: [], events: null };
+  const ses = { on: false, phase: 'idle', q: null, picked: null, last: null, timers: [], songId: null, heard: false, skipped: [], events: null,
+    bar: null, lastBar: null };
 
   // ---------- history (per viewer, local) ----------
   function history() { try { const a = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
@@ -10262,10 +10400,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const gt = T.guideTones(c), up = (pc, lo) => lo + (((pc - lo) % 12) + 12) % 12;
     return { bass: 36 + c.root, shell: [up(c.root + gt.third, 52), up(c.root + gt.seventh, 52)], root3: 48 + c.root };
   }
+  // the context that actually sounds: Song only with decoded audio and a bar picked for this question
+  const buffer = () => (api && api.engine ? api.engine.buffer : null);
+  const mode = () => (drills().context === 'song' && ses.bar && buffer() ? 'song' : drills().context === 'drone' ? 'drone' : 'comp');
   function contextEvents(c, withTone, q) {
-    const d = drills(), n = bpb(), beat = beatSec(), v = voicing(c), ev = [];
-    const ctx = d.context === 'drone' ? 'drone' : 'comp'; // 'song' (phase 2) plays as Comp
-    if (ctx === 'comp') {
+    const d = drills(), v = voicing(c), ev = [], ctx = mode(), seg = ctx === 'song' ? ses.bar : null;
+    let n = bpb(), beat = beatSec(), origin = 0, beat0 = 0;
+    if (seg) {
+      // the recording from the bar line (or one beat before it), to the end of the bar / the half bar
+      n = seg.beats; beat = seg.beat; beat0 = seg.beat0;
+      origin = d.leadIn ? Math.min(beat, seg.t0) : 0;
+      ev.push({ t: 0, kind: 'rec', buffer: buffer(), offset: seg.t0 - origin, dur: origin + n * beat, db: d.level });
+    } else if (ctx === 'comp') {
       const half = n >= 4 ? Math.floor(n / 2) : null;
       for (let i = 0; i < n; i++) {
         if (i === 0 || i === half) ev.push({ t: i * beat, kind: 'bass', midi: v.bass, dur: beat * 0.92, vel: i === 0 ? 1 : 0.85 });
@@ -10274,17 +10420,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       // slightly swung: a soft pickup on the swung "and" of the last beat
       if (n >= 2) ev.push({ t: (n - 1 + 2 / 3) * beat, kind: 'shell', midis: v.shell, dur: beat * 0.3, vel: 0.55 });
     } else ev.push({ t: 0, kind: 'drone', midis: [v.root3].concat(v.shell), dur: n * beat, vel: 1 });
-    if (!withTone) return { events: ev, toneAt: null, end: n * beat };
-    const after = d.noteOn === 'after', toneAt = after ? n * beat : Math.min(2, n - 1) * beat;
+    const ctxEnd = origin + n * beat;
+    if (!withTone) return { events: ev, toneAt: null, end: ctxEnd };
+    const after = d.noteOn === 'after', toneAt = origin + (after ? n : Math.min(2, n - 1)) * beat, toneEnd = toneAt + 2 * beat;
     if (after) ev.push({ t: toneAt, kind: 'drone', midis: [v.root3].concat(v.shell), dur: 2 * beat, vel: 0.7 });
+    else if (seg && toneEnd > ctxEnd + 1e-6) ev.push({ t: ctxEnd, kind: 'drone', midis: [v.root3].concat(v.shell), dur: toneEnd - ctxEnd, vel: 0.7 });
     ev.push({ t: toneAt, kind: 'tone', midi: q.midi, dur: 2 * beat, timbre: timbre() });
-    let end = Math.max(n * beat, toneAt + 2 * beat), answerAt = toneAt;
+    let end = Math.max(ctxEnd, toneEnd), answerAt = toneAt;
     if (d.singFirst) {
       // a silent count of 2 beats after the tone (the click on the even beats of the bar, when the song's click is on)
-      const p = song().practice, click = p.click && p.click !== 'off', startBeat = Math.round(toneAt / beat) + 2;
+      const p = song().practice, click = p.click && p.click !== 'off', startBeat = beat0 + Math.round((toneAt - origin) / beat) + 2;
       for (let j = 0; j < 2; j++) {
-        const pos = (startBeat + j) % n;
-        if (click && (pos + 1) % 2 === 0) ev.push({ t: (startBeat + j) * beat, kind: 'tick', vel: p.clickVolume == null ? 0.5 : p.clickVolume, dur: 0.04 });
+        const pos = (startBeat + j) % bpb();
+        if (click && (pos + 1) % 2 === 0) ev.push({ t: origin + (startBeat - beat0 + j) * beat, kind: 'tick', vel: p.clickVolume == null ? 0.5 : p.clickVolume, dur: 0.04 });
       }
       answerAt = toneAt + 4 * beat;
       end = Math.max(end, answerAt);
@@ -10305,14 +10453,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (!ready()) { status(NEED + '.'); return; }
     const E = api.engine;
     if (E.state.playing) E.pause(); // the drill and loop playback never sound together
-    ses.on = true; ses.songId = song().id; ses.last = null;
+    ses.on = true; ses.songId = song().id; ses.last = null; ses.lastBar = null;
     next();
   }
   function stop(reason) {
     if (!ses.on && ses.phase === 'idle') return;
     clearTimers();
     A.stop();
-    ses.on = false; ses.phase = 'idle'; ses.q = null; ses.picked = null;
+    ses.on = false; ses.phase = 'idle'; ses.q = null; ses.picked = null; ses.bar = null;
     if (reason === 'play') status('Ear drill ended: playback started.');
     else if (reason === 'tab') { /* leaving the tab: quietly */ }
     render();
@@ -10324,10 +10472,31 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       rng: Math.random, low: register()[0], high: register()[1] });
     ses.skipped = r.skipped;
     if (!r.question) { status('None of these chords can be drilled: ' + r.skipped.join(', ') + '.'); stop(); return; }
-    if (r.skipped.length) status('Skipped ' + r.skipped.join(', ') + ' (not a chord symbol the drill can read).');
+    const notes = [];
+    if (r.skipped.length) notes.push('Skipped ' + r.skipped.join(', ') + ' (not a chord symbol the drill can read).');
+    ses.bar = pickSongBar(r.question.chord, notes);
+    if (notes.length) status(notes.join(' '));
     ses.q = r.question; ses.picked = null; ses.heard = false; ses.phase = 'listen';
     ses.last = { chord: r.question.chord, semis: r.question.semis };
     playQuestion();
+  }
+  // Song context: the bar for this question (null → Comp; the reason goes to the status line)
+  function songNote() {
+    return api.engine.hasAudio ? 'The recording is not decoded yet: Song plays as Comp for now.'
+      : 'No audio loaded: Song plays as Comp (load the recording to hear the song under the note).';
+  }
+  function pickSongBar(chord, notes) {
+    const d = drills();
+    if (d.context !== 'song') return null;
+    const buf = buffer();
+    if (!buf) { notes.push(songNote()); return null; }
+    const cands = T.songBars(song().grid, chord, { duration: buf.duration });
+    if (d.quiet) for (const c of cands) c.activity = T.barActivity(c, song().loops);
+    const b = T.pickBar(cands, { rng: Math.random, last: ses.lastBar, quiet: d.quiet });
+    if (!b) { notes.push('No bar of ' + chord + ' inside the form of the recording: Comp for this question.'); return null; }
+    ses.lastBar = { index: b.index, part: b.part };
+    notes.push(chord + ': ' + b.label + ' of the recording' + (d.leadIn ? ' (with a beat before it).' : '.'));
+    return b;
   }
   function playQuestion() {
     const q = ses.q, c = T.parseChord(q.chord);
@@ -10345,7 +10514,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (ses.phase === 'revealed') return;
     if (ses.phase !== 'answer') { status(drills().singFirst && ses.heard ? 'Sing down to the root first, then answer.' : 'Wait for the note, then answer.'); return; }
     ses.picked = semis;
-    pushHistory({ t: Date.now(), chord: ses.q.chord, semis: ses.q.semis, answered: semis });
+    const e = { t: Date.now(), chord: ses.q.chord, semis: ses.q.semis, answered: semis };
+    if (mode() === 'song') e.bar = ses.bar.label;
+    pushHistory(e);
     setPhase('revealed');
   }
   function repeat() { if (ses.on && ses.q) playQuestion(); }
@@ -10364,6 +10535,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       { t: 2 * b, kind: 'tone', midis: [root, q.midi], dur: 2 * b, timbre: tb, vel: 0.8 }]);
   }
   function status(msg, warn) { if (api) api.status(msg, warn); }
+  const levelText = (db) => (db < 0 ? '−' + Math.abs(db) : '0') + ' dB';
 
   // ---------- keys ----------
   function key(e) {
@@ -10470,7 +10642,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const note = c ? T.pcName(c.root + e.semis, c.sharps) : '?', lab = c ? T.shortLabel(T.degreeLabel(c, e.semis)) : String(e.semis);
       const you = c && typeof e.answered === 'number' ? T.shortLabel(T.degreeLabel(c, e.answered)) : '–';
       ol.append(h('li', null, h('span', { class: 'el-q', text: e.chord + ' · ' + note + ' · ' + lab }),
-        h('span', { class: 'el-a' + (e.answered === e.semis ? '' : ' diff'), text: 'you: ' + you })));
+        h('span', { class: 'el-a' + (e.answered === e.semis ? '' : ' diff'), text: 'you: ' + you }),
+        typeof e.bar === 'string' ? h('span', { class: 'el-b', text: e.bar.slice(0, 40), title: 'The bar of the recording under the note' }) : null));
     }
   }
   function render() {
@@ -10482,7 +10655,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     $('#earOn').hidden = !ok;
     if (!ok) return;
     const d = drills();
-    setSeg($('#earCtx'), d.context === 'drone' ? 'drone' : 'comp');
+    setSeg($('#earCtx'), d.context);
+    const songRow = $('#earSongRow');
+    songRow.hidden = d.context !== 'song';
+    if (!songRow.hidden) {
+      $('#earLead').setAttribute('aria-pressed', String(!!d.leadIn));
+      $('#earQuiet').setAttribute('aria-pressed', String(!!d.quiet));
+      const lv = $('#earLevel');
+      if (document.activeElement !== lv) lv.value = String(d.level);
+      const lt = levelText(d.level);
+      if ($('#earLevelV').textContent !== lt) $('#earLevelV').textContent = lt;
+      songRow.classList.toggle('no-audio', !buffer());
+      songRow.title = buffer() ? '' : 'No audio loaded: Song plays as Comp until the recording is loaded';
+    }
     setSeg($('#earNote'), d.noteOn);
     setSeg($('#earSet'), presetName());
     setSeg($('#earTone'), timbre());
@@ -10529,7 +10714,17 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     $('#earHear').addEventListener('click', () => hear());
     $('#earToGrid').addEventListener('click', () => api.openGrid());
     $('#earAns').addEventListener('click', (e) => { const b = e.target.closest('button[data-semis]'); if (b) answer(Number(b.dataset.semis)); });
-    segClicks($('#earCtx'), (v) => S.setDrills({ context: v }));
+    segClicks($('#earCtx'), (v) => {
+      S.setDrills({ context: v });
+      if (v === 'song' && !buffer()) status(songNote());
+    });
+    $('#earLead').addEventListener('click', () => S.setDrills({ leadIn: !drills().leadIn }));
+    $('#earQuiet').addEventListener('click', () => S.setDrills({ quiet: !drills().quiet }));
+    const lv = $('#earLevel');
+    lv.addEventListener('input', () => { S.setDrills({ level: Number(lv.value) }, { key: 'ear-level' }); $('#earLevelV').textContent = levelText(drills().level); });
+    // a drag (or a run of arrow-key steps within 800 ms) is one undo step; the slider keeps focus so the arrows go on working
+    lv.addEventListener('pointerup', () => S.endGesture());
+    lv.addEventListener('change', () => status('Song level ' + levelText(drills().level) + ' (the recording under the note).'));
     segClicks($('#earNote'), (v) => S.setDrills({ noteOn: v }));
     segClicks($('#earSet'), (v) => {
       if (v === 'custom') { if (!Array.isArray(drills().answerSet)) S.setDrills({ answerSet: T.answerSet(GENERIC, drills().answerSet) }, { label: 'ear: answer set' }); }
@@ -10560,7 +10755,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   SLP.ear = { init, render, key, start, stop, next, answer, repeat, context, hear, isActive, clearHistory, history,
     get running() { return ses.on; },
-    get state() { return { on: ses.on, phase: ses.phase, q: ses.q ? Object.assign({}, ses.q) : null, picked: ses.picked, events: ses.events, skipped: ses.skipped.slice() }; } };
+    get state() {
+      return { on: ses.on, phase: ses.phase, q: ses.q ? Object.assign({}, ses.q) : null, picked: ses.picked, skipped: ses.skipped.slice(),
+        events: ses.events ? ses.events.map((e) => (e.buffer ? Object.assign({}, e, { buffer: true }) : e)) : null,
+        bar: ses.bar ? Object.assign({}, ses.bar) : null, mode: ses.on ? mode() : null, recPos: A.recPos };
+    } };
 })();
 // ---- app/ui-phone.js ----
 /* SLP.phone — the phone layout's behaviour (2026-11; the layout itself is the CSS block "Phone layout" in page.html).
