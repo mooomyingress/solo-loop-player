@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hPwwLYpIqEg9e0cIflTLzDkoWb1v9cOcmpwe7ivgKCo='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gk9o2Ps22JEYJhyHEGtj9BP3WG5I/FPG8p+ylGu7Wbc='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -53,6 +53,9 @@
   --curbar: rgba(27, 31, 39, 0.055);      /* the bar under the playhead: waveform tint */
   --curbar-cell: rgba(27, 31, 39, 0.10);  /* the same bar in the Bars strip and the Grid picture */
   --tap: #d4442b;                          /* tapped downbeats during a take */
+  --saved-soft: rgba(176, 127, 34, 0.15);  /* saved sub-loops and the marked range (amber = --star) */
+  --saved-mid: rgba(176, 127, 34, 0.32);
+  --on-saved: #ffffff;
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
   --gutter: 64px;
@@ -87,6 +90,9 @@
     --curbar: rgba(230, 233, 240, 0.055);
     --curbar-cell: rgba(230, 233, 240, 0.11);
     --tap: #ff7b5e;
+    --saved-soft: rgba(216, 168, 74, 0.17);
+    --saved-mid: rgba(216, 168, 74, 0.36);
+    --on-saved: #241904;
     color-scheme: dark;
   }
 }
@@ -118,6 +124,9 @@
   --curbar: rgba(230, 233, 240, 0.055);
   --curbar-cell: rgba(230, 233, 240, 0.11);
   --tap: #ff7b5e;
+  --saved-soft: rgba(216, 168, 74, 0.17);
+  --saved-mid: rgba(216, 168, 74, 0.36);
+  --on-saved: #241904;
   color-scheme: dark;
 }
 
@@ -350,6 +359,16 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   background-position: calc(100% - 10px) 52%, calc(100% - 6px) 52%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
 .sl-opts select:disabled { opacity: 0.5; }
 .sl-note { color: var(--faint); font-size: 11.5px; }
+/* saved sub-loops (2026-11): the state chip (Saved / Marked, amber), the Save button and its inline name field */
+.sl-len { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.chip.sl-state { color: var(--ink); font-weight: 600; border-color: var(--star); background: var(--saved-soft); max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+.chip.sl-state .ic { width: 12px; height: 12px; color: var(--star); }
+#saveSub { height: 24px; padding: 0 8px; }
+#saveSub .ic { color: var(--star); }
+.sl-save { display: inline-flex; align-items: center; gap: 4px; }
+.sl-save input { width: 160px; height: 24px; }
+.sl-save button { height: 24px; padding: 0 8px; }
+.sl-len.naming #saveSub { display: none; }
 /* Visual refresh: three titled groups (Turn, Click, Flow; Shape became the Sub-loop card). The controls still wrap one by one (two lines with
    everything on); each small-caps title is glued to its group's first control (.og-h) and carries a hairline divider,
    dropped where a group starts a line (.newline, set by SLP.panels from the layout). */
@@ -449,6 +468,19 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
 .phrases .row.playing:not(.sel) { box-shadow: inset 0 -2px 0 var(--head-soft); }
 .phrases .row .name { color: var(--ink); }
 .phrases .row input { height: 20px; width: 100%; }
+/* a saved sub-loop row (interleaved by start): amber left bar, bookmark instead of a number, bold name, "saved" tag */
+.phrases .row.saved { box-shadow: inset 3px 0 0 var(--star); }
+.phrases .row.saved .n { color: var(--star); display: flex; justify-content: flex-end; align-items: center; }
+.phrases .row.saved .n .ic { width: 13px; height: 13px; }
+.phrases .row.saved .label .name { font-weight: 650; }
+.phrases .row.saved .stag { flex: none; font-size: 10.5px; line-height: 14px; padding: 0 5px; border-radius: 7px; color: var(--star); border: 1px solid color-mix(in srgb, var(--star) 55%, transparent); }
+.phrases .row.saved.sel { background: var(--saved-soft); border-color: var(--star); }
+.phrases .row.saved.sel .n { color: var(--star); }
+.chip.lead.amber { border-color: var(--star); background: var(--saved-soft); }
+#tabPhrase.is-saved .wl-pair, #tabPhrase.is-saved .land-box { display: none; }
+#tabPhrase.is-saved .edgecol .eh .ic { color: var(--star); }
+.shapeseg.dim { opacity: 0.6; } /* a saved / marked sub-loop plays its exact range: the shape does not apply to it */
+.dot.amber { background: var(--star); }
 .star { border: 0; background: transparent; padding: 0; width: 18px; height: 18px; justify-content: center; color: var(--line-strong); }
 .star svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.4; }
 .star[aria-pressed="true"] { color: var(--star); background: transparent; }
@@ -1046,6 +1078,15 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
   .app .subloop .sl-desc { white-space: normal; font-size: 13px; line-height: 1.35; padding: 8px 0 0; }
   .app .subloop .sl-opts { flex-direction: column; align-items: stretch; gap: 0; border-top: 1px solid var(--line); margin-top: 8px; padding: 6px 0 0; }
   .app .subloop .sl-note { font-size: 12.5px; padding: 4px 0 2px; }
+  /* Save + its name field share one 44 px row with the length chip; while naming, the field takes the chip's place */
+  .app .subloop .sl-len { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+  .app .subloop .sl-len > .chip { align-self: center; }
+  .app .bar.practice #saveSub { flex: none; justify-content: center; height: 44px; padding: 0 16px; }
+  .app .subloop .sl-len.naming > .chip { display: none; }
+  .app .subloop .sl-save { display: flex; flex: 1 1 auto; min-width: 0; gap: 8px; }
+  .app .subloop .sl-save[hidden] { display: none; }
+  .app .subloop .sl-save input { flex: 1 1 auto; min-width: 0; width: auto; height: 44px; font-size: 16px; }
+  .app .bar.practice .sl-save button { flex: none; justify-content: center; }
   .app .bar.practice .sr { position: static; width: auto; height: auto; clip: auto; overflow: visible; margin-left: 4px; }
   .app .bar.practice .ladder-nums { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
   .app .bar.practice .ladder-nums[hidden] { display: none; }
@@ -1161,6 +1202,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
 <symbol id="i-cloud-err" viewBox="0 0 16 16"><path d="M4.6 12.8h6.8a2.9 2.9 0 0 0 .4-5.8 3.9 3.9 0 0 0-7.6-.7 3.3 3.3 0 0 0 .4 6.5z"/><path d="M8 7.4v2.2"/><path d="M8 11.3h.01"/></symbol>
 <symbol id="i-sync" viewBox="0 0 16 16"><path d="M2.8 7.5a5 5 0 0 1 8.7-3.2"/><path d="M12 1.8v2.8H9.2"/><path d="M13.2 8.5a5 5 0 0 1-8.7 3.2"/><path d="M4 14.2v-2.8h2.8"/></symbol>
 <symbol id="i-ear" viewBox="0 0 16 16"><path d="M4.2 6.2a3.8 3.8 0 0 1 7.6 0c0 2.1-2 2.7-2.2 4.6-.2 1.8-1.3 2.9-2.8 2.9a2.4 2.4 0 0 1-2.2-1.5"/><path d="M6.4 6.4a1.6 1.6 0 0 1 3.2 0c0 1-.9 1.3-1 2.2"/></symbol>
+<symbol id="i-bookmark" viewBox="0 0 16 16"><path d="M4.5 2.5h7v11L8 10.6l-3.5 2.9z"/></symbol>
 <symbol id="i-volume" viewBox="0 0 16 16"><path d="M2.5 6.2h2.4L8.2 3.4v9.2L4.9 9.8H2.5z"/><path d="M10.8 5.6a3.4 3.4 0 0 1 0 4.8"/></symbol>
 </defs></svg>
 <div class="app" id="app">
@@ -1251,7 +1293,7 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
       <button type="button" class="phone-only" id="phNext" title="Next phrase (or swipe left on the phrase lane)" aria-label="Next phrase"><span class="tb-w">Phrase </span><span class="tb-ch" aria-hidden="true">›</span></button>
       <button type="button" class="phone-only" id="editHandles" aria-pressed="false" title="Edit handles: drag A / B, phrase edges, the window and bar lines with one finger">Edit</button>
     </div>
-    <div class="cv row-wave"><canvas id="cvWave" role="img" aria-label="Zoomed waveform. Drag A and B to adjust the loop."></canvas><div class="cv-empty" id="waveEmpty"></div></div>
+    <div class="cv row-wave"><canvas id="cvWave" role="img" aria-label="Zoomed waveform. Drag A and B to adjust the loop, drag elsewhere to mark a sub-loop, drag the playhead to scrub."></canvas><div class="cv-empty" id="waveEmpty"></div></div>
     <div class="gut">Phrases</div>
     <div class="cv row-phr"><canvas id="cvPhrases" role="img" aria-label="Phrases. Click to loop a phrase, drag edges to adjust, drag on empty space to add one."></canvas></div>
   </section>
@@ -1283,7 +1325,12 @@ kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-
         <button type="button" role="radio" aria-checked="false" data-shape="fitBar" title="Whole bars: an edge within a hair of a bar line snaps to it, otherwise it stretches outward, so it keeps the time signature. Clears Lead-in / Lead-out">Whole bars<span class="tag"> · in time</span></button>
         <button type="button" role="radio" aria-checked="false" data-shape="window" id="shapeWinBtn" hidden title="Window: a fixed number of beats on the grid"><span class="wl">Window · </span><span class="wv"></span></button>
       </span>
-      <span class="chip num" id="shapeChip" hidden title="Length of one pass"></span>
+      <span class="sl-len" id="slLen">
+        <span class="chip sl-state" id="shapeState" hidden></span>
+        <span class="chip num" id="shapeChip" hidden title="Length of one pass"></span>
+        <button type="button" id="saveSub" disabled title="Pick a phrase first"><svg class="ic" aria-hidden="true"><use href="#i-bookmark"/></svg>Save</button>
+        <span class="sl-save" id="saveBox" hidden><input type="text" id="saveName" autocomplete="off" maxlength="60" enterkeyhint="done" aria-label="Name of the saved sub-loop" placeholder="Name"><button type="button" id="saveOk" class="primary" title="Save the sub-loop with this name (Enter)">Save</button><button type="button" id="saveCancel" title="Do not save (Esc)">Cancel</button></span>
+      </span>
       <span class="sl-win" id="shapeWin" hidden>
         <span class="lbl">Slide</span><button type="button" id="winPrev" class="nav" title="Slide the window one beat earlier (,). Shift-click: half a beat" aria-label="Slide the window one beat earlier">‹</button><button type="button" id="winNext" class="nav" title="Slide the window one beat later (.). Shift-click: half a beat" aria-label="Slide the window one beat later">›</button>
         <button type="button" id="winReset" title="Back to the shape you had before the window">Reset</button>
@@ -5428,7 +5475,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *     speed:    { t, v: rate },
  *     practice: { t, v: practice },
  *     grid:     { t, v: grid | null },
- *     loops:    [{ sid, t, v: { name, a, b, pos, uuid, sens, phrases: [...] } }],   // sorted by (pos, sid)
+ *     loops:    [{ sid, t, v: { name, a, b, pos, uuid, sens, phrases: [...], saved?: [{ id, a, b, name, star }] } }],   // sorted by (pos, sid)
+ *               (saved: the loop's saved sub-loops, absent when it has none)
  *     deleted:  [{ sid, deletedAt }] }                                             // loop tombstones, sorted by sid
  * t / deletedAt: ms epoch of the last change on the device that made it (never lower than the value it replaced).
  *
@@ -5467,12 +5515,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const isNum = (x) => typeof x === 'number' && isFinite(x);
   const isTomb = (e) => !!e && 'deletedAt' in e;
   const stampOf = (e) => (!e ? -Infinity : isTomb(e) ? e.deletedAt : e.t);
-  // content signature: a loop's phrase ids are device-local details (same phrases, other ids = same content)
+  // content signature: a loop's phrase and saved sub-loop ids are device-local details (same items, other ids = same content)
   function sig(e, isLoop) {
     if (!e) return '';
     if (isTomb(e)) return '~deleted';
     if (!isLoop) return canon(e.v);
-    const v = Object.assign({}, e.v, { phrases: (e.v.phrases || []).map((p) => Object.assign({}, p, { id: undefined })) });
+    const v = Object.assign({}, e.v, { phrases: (e.v.phrases || []).map((p) => Object.assign({}, p, { id: undefined })),
+      saved: Array.isArray(e.v.saved) ? e.v.saved.map((x) => Object.assign({}, x, { id: undefined })) : undefined });
     return canon(v);
   }
 
@@ -5652,6 +5701,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  * Audio          putAudio(songId, file) · getAudio(songId) → File | null · deleteAudio(songId)   (Promises)
  * Backup         exportAll() → JSON text (no audio) · importAll(text, {mode: 'merge'|'replace'}) → {added, replaced, v1?}
  *                (a v1 state object is imported as one song)
+ * Saved sub-loops (2026-11, owner request): loop.saved = [{ id, a, b, name, star }] in song seconds, ordered by a (may lie
+ *                outside A/B, inside the track; b − a ≥ MIN_LEN; name ≤ 60 chars). Never touched by phrase operations (detect,
+ *                regroup, split, merge, delete, edges). addSaved(loopId, {a, b, name}) → { item, existed } (an identical range,
+ *                |Δa| and |Δb| < 10 ms, is not added again: the existing one is returned; either way it becomes the selection)
+ *                · renameSaved(loopId, id, name) · starSaved(loopId, id, star?) · updateSaved(loopId, id, {a, b}) · removeSaved(loopId, id)
+ *                · setActiveSaved(id | null). song.activeSavedId: a SELECTION field like activePhraseIds (not in the undo history,
+ *                not synced, persisted); selecting a saved item clears activePhraseIds and vice versa (setActivePhrases(null)
+ *                clears both); switching loop clears it; it is dropped when its item no longer exists.
+ *                setMarked({a, b} | null) → marked() → { a, b, loopId } | null: the MARKED range (drag on the waveform), an unsaved
+ *                temporary sub-loop, one per song, memory only (not persisted, synced or undoable); cleared by any other selection.
  * Phrase ops keep the selection: splitting the last selected phrase extends the selection to its
  * right half; merging renames a selected id that was merged away.
  */
@@ -5907,12 +5966,30 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return out.midi == null && !out.skip ? null : out;
   }
 
+  // Saved sub-loops: the exact range one pass played when the owner saved it (song seconds; may reach outside A/B into
+  // the render region). Junk dropped, clamped to the track, ≥ MIN_LEN, names trimmed to 60 characters, ordered by start.
+  const SAVED_NAME_MAX = 60;
+  function normSaved(list, max) {
+    const hi = Math.min(max > 0 ? max : Infinity, MAX_T), out = [], seen = new Set();
+    for (const v of Array.isArray(list) ? list : []) {
+      if (!v || typeof v !== 'object' || typeof v.a !== 'number' || typeof v.b !== 'number' || !isFinite(v.a) || !isFinite(v.b)) continue;
+      const a = Math.min(Math.max(0, Math.min(v.a, v.b)), hi), b = Math.min(Math.max(v.a, v.b), hi);
+      if (b - a < MIN_LEN - EPS) continue;
+      let id = typeof v.id === 'string' && v.id ? v.id.slice(0, 80) : newId('v');
+      if (seen.has(id)) id = newId('v');
+      seen.add(id);
+      out.push({ id, a, b, name: typeof v.name === 'string' ? v.name.trim().slice(0, SAVED_NAME_MAX) : '', star: !!v.star });
+    }
+    return out.sort((x, y) => x.a - y.a || x.b - y.b);
+  }
+
   function normLoop(l, max) {
     if (!l || typeof l.a !== 'number' || typeof l.b !== 'number' || !(l.b > l.a)) return null;
     const [a, b] = clampAB(l.a, l.b, max, 'b');
     const out = { id: l.id || newId('l'), uuid: l.uuid || null, sid: sidFor(l), name: String(l.name || 'Loop'), a, b,
       pos: num(l.pos, NaN),
       phrases: normPhrases(l.phrases, a, b),
+      saved: normSaved(l.saved, max),
       phraseSensitivity: Math.min(1, Math.max(0, num(l.phraseSensitivity, 0.5))),
       onsets: normOnsets(l.onsets) };
     if (typeof l.updatedAt === 'number' && isFinite(l.updatedAt) && l.updatedAt >= 0) out.updatedAt = l.updatedAt;
@@ -5950,13 +6027,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const loops = fixLoops((Array.isArray(s.loops) ? s.loops : []).map((l) => normLoop(l, max)).filter(Boolean));
     if (!loops.length) loops.push(fixLoops([normLoop({ name: 'Loop 1', a: 0, b: Math.min(max, 8) }, max)])[0]);
     const activeLoopId = loops.some((l) => l.id === s.activeLoopId) ? s.activeLoopId : loops[0].id;
-    const ap = Array.isArray(s.activePhraseIds) && s.activePhraseIds.length === 2 ? s.activePhraseIds.map(String) : null;
+    let ap = Array.isArray(s.activePhraseIds) && s.activePhraseIds.length === 2 ? s.activePhraseIds.map(String) : null;
+    const AL = loops.find((l) => l.id === activeLoopId);
+    const as = typeof s.activeSavedId === 'string' && AL.saved.some((v) => v.id === s.activeSavedId) ? s.activeSavedId : null;
+    if (as) ap = null;
     return {
       id: s.id || newId('s'), title: String(s.title || 'Untitled'), artist: String(s.artist || ''),
       audioName: String(s.audioName || ''), duration, sourceDuration: Math.min(MAX_T, Math.max(0, num(s.sourceDuration, 0))),
       template: s.template && typeof s.template === 'object' ? s.template : null,
       rate: Math.min(1.1, Math.max(0.4, num(s.rate, 1))), loopOn: s.loopOn !== false,
-      activeLoopId, activePhraseIds: ap, practice: normPractice(s.practice), drills: normDrills(s.drills), tuning: normTuning(s.tuning), grid: normGrid(s.grid), loops,
+      activeLoopId, activePhraseIds: ap, activeSavedId: as, practice: normPractice(s.practice), drills: normDrills(s.drills), tuning: normTuning(s.tuning), grid: normGrid(s.grid), loops,
       // sync (2026-11): identity, per-section stamps + loop tombstones, the other device's audio file name (hint only)
       uuid: typeof s.uuid === 'string' && s.uuid ? s.uuid.slice(0, 80) : null, sync: normSyncMeta(s.sync), audioHint: normHint(s.audioHint),
     };
@@ -6100,7 +6180,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   let pending = null;     // the step the running mutation pushed (dropped again if the mutation changed nothing)
   // sync fields are not history: identity (uuid), stamps (sync, loop updatedAt: re-derived from the content after an undo,
   // so an undo is a NEW local edit for sync) and the other device's audio name (audioHint)
-  const SKIP = { id: 1, rate: 1, loopOn: 1, activeLoopId: 1, activePhraseIds: 1, audioName: 1, duration: 1, uuid: 1, sync: 1, audioHint: 1 };
+  const SKIP = { id: 1, rate: 1, loopOn: 1, activeLoopId: 1, activePhraseIds: 1, activeSavedId: 1, audioName: 1, duration: 1, uuid: 1, sync: 1, audioHint: 1 };
   function H(id) { let h = hist.get(id); if (!h) { h = { undo: [], redo: [], key: null, t: 0 }; hist.set(id, h); } return h; }
   const snapLoop = (l) => { const o = Object.assign({}, l); delete o.onsets; delete o.updatedAt; return o; };
   function snap(s) {
@@ -6116,9 +6196,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     s.template = sn.template;
     s.loops = d.loops.map((l) => Object.assign(l, { onsets: sn.onsets[l.id] !== undefined ? sn.onsets[l.id] : null }));
     // the selection is not part of the history: kept when it still exists, otherwise the nearest valid one
-    if (!s.loops.some((l) => l.id === s.activeLoopId)) { s.activeLoopId = s.loops[0].id; s.activePhraseIds = null; }
-    const L = s.loops.find((l) => l.id === s.activeLoopId);
-    if (s.activePhraseIds && !s.activePhraseIds.every((id) => L.phrases.some((p) => p.id === id))) s.activePhraseIds = null;
+    fixSelection(s);
   }
   // Called by every undoable mutation, after its validity checks and before it changes anything.
   function record(label, key) {
@@ -6196,14 +6274,17 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const metaValue = (s) => ({ title: s.title, artist: s.artist, sourceDuration: s.sourceDuration, template: s.template });
   const loopValue = (l) => ({ name: l.name, a: l.a, b: l.b, pos: l.pos, uuid: l.uuid || null, sens: l.phraseSensitivity,
     phrases: l.phrases.map((p) => ({ id: p.id, a: p.a, b: p.b, star: !!p.star, name: p.name || '', manual: !!p.manual, shift: p.shift || 0,
-      landing: p.landing ? Object.assign({}, p.landing) : undefined })) });   // landing: only the owner's corrections (absent = no key)
+      landing: p.landing ? Object.assign({}, p.landing) : undefined })),   // landing: only the owner's corrections (absent = no key)
+    // saved sub-loops: only when there are some (a loop without any has no key, so older documents and the pristine seed match)
+    saved: l.saved && l.saved.length ? l.saved.map((v) => ({ id: v.id, a: v.a, b: v.b, name: v.name || '', star: !!v.star })) : undefined });
   function secFp(s, k) {
     // the practice section also carries the ear drill settings (song.drills, DRILLS-SPEC.md) and the tuning (song.tuning)
     return k === 'meta' ? canon([s.title, s.artist, s.sourceDuration]) : k === 'speed' ? String(s.rate)
       : k === 'practice' ? canon([s.practice, s.drills || null, s.tuning || null]) : canon(s.grid);
   }
   const loopFp = (l) => canon(loopValue(l));
-  const loopSig = (v) => canon(Object.assign({}, v, { phrases: (v.phrases || []).map((p) => Object.assign({}, p, { id: undefined })) }));
+  const loopSig = (v) => canon(Object.assign({}, v, { phrases: (v.phrases || []).map((p) => Object.assign({}, p, { id: undefined })),
+    saved: v.saved ? v.saved.map((x) => Object.assign({}, x, { id: undefined })) : undefined }));
   let seedRef = null;                // the pristine seed, for the migration
   function pristine() {
     if (seedRef === null) {
@@ -6304,7 +6385,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function loopFromDoc(e, id, max) {
     const v = e.v || {};
     return normLoop({ id, sid: e.sid, uuid: typeof v.uuid === 'string' ? v.uuid : null, name: v.name, a: v.a, b: v.b, pos: num(v.pos, 0),
-      phrases: v.phrases, phraseSensitivity: v.sens, onsets: null, updatedAt: e.t }, max);
+      phrases: v.phrases, saved: v.saved, phraseSensitivity: v.sens, onsets: null, updatedAt: e.t }, max);
   }
   function setSection(s, k, v) {
     if (k === 'meta') {
@@ -6318,9 +6399,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   const byPos = (x, y) => x.pos - y.pos || (x.sid < y.sid ? -1 : x.sid > y.sid ? 1 : 0);
   function fixSelection(s) {
-    if (!s.loops.some((l) => l.id === s.activeLoopId)) { s.activeLoopId = s.loops[0].id; s.activePhraseIds = null; }
+    if (!s.loops.some((l) => l.id === s.activeLoopId)) { s.activeLoopId = s.loops[0].id; s.activePhraseIds = null; s.activeSavedId = null; }
     const L = s.loops.find((l) => l.id === s.activeLoopId);
     if (s.activePhraseIds && !s.activePhraseIds.every((id) => L.phrases.some((p) => p.id === id))) s.activePhraseIds = null;
+    if (s.activeSavedId && !(L.saved || []).some((v) => v.id === s.activeSavedId)) s.activeSavedId = null;
   }
   // Remote changes are not undo steps (Cmd+Z never reverts another device's edit): every snapshot in the song's undo / redo
   // history gets the units the merge took from the other device, so undoing a local edit later keeps them.
@@ -6568,7 +6650,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const s = song();
     if (!loopById(id)) return;
     s.activeLoopId = id;
-    s.activePhraseIds = null;
+    s.activePhraseIds = null; s.activeSavedId = null;
     changed('loops', { loopId: id });
   }
   function addLoop(fields) {
@@ -6581,7 +6663,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     record('add loop "' + l.name + '"');
     s.loops.push(l);
     s.activeLoopId = l.id;
-    s.activePhraseIds = null;
+    s.activePhraseIds = null; s.activeSavedId = null;
     changed('loops', { loopId: l.id });
     return l;
   }
@@ -6596,9 +6678,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const nx = s.loops[s.loops.indexOf(L) + 1];
     l.pos = nx ? (L.pos + nx.pos) / 2 : L.pos + 1; // between its neighbours: no other loop's order changes
     l.phrases.forEach((p) => { p.id = newId('p'); });
+    (l.saved || []).forEach((v) => { v.id = newId('v'); }); // the copy's saved sub-loops are its own
     s.loops.splice(s.loops.indexOf(L) + 1, 0, l);
     s.activeLoopId = l.id;
-    s.activePhraseIds = null;
+    s.activePhraseIds = null; s.activeSavedId = null;
     changed('loops', { loopId: l.id });
     return l;
   }
@@ -6608,7 +6691,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (i < 0 || s.loops.length <= 1) return false;
     record('delete loop "' + s.loops[i].name + '"');
     s.loops.splice(i, 1);
-    if (s.activeLoopId === id) { s.activeLoopId = s.loops[Math.max(0, i - 1)].id; s.activePhraseIds = null; }
+    if (s.activeLoopId === id) { s.activeLoopId = s.loops[Math.max(0, i - 1)].id; s.activePhraseIds = null; s.activeSavedId = null; }
     changed('loops', { loopId: s.activeLoopId });
     return true;
   }
@@ -6781,9 +6864,110 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     p.shift = v;
     changed('phrases', { loopId });
   }
+  // A phrase selection replaces a saved one (and a marked range); null (Esc, Whole loop, a seek out of the range) clears all.
   function setActivePhrases(ids) {
-    song().activePhraseIds = Array.isArray(ids) && ids.length === 2 ? [String(ids[0]), String(ids[1])] : null;
-    changed('phrases', { loopId: song().activeLoopId });
+    const s = song();
+    s.activePhraseIds = Array.isArray(ids) && ids.length === 2 ? [String(ids[0]), String(ids[1])] : null;
+    s.activeSavedId = null;
+    marks.delete(s.id);
+    changed('phrases', { loopId: s.activeLoopId });
+  }
+
+  // ---------- saved sub-loops (2026-11) ----------
+  const SAME_T = 0.01; // an identical range: both edges within 10 ms
+  const marks = new Map(); // song id → the marked range { a, b, loopId } (memory only)
+  const savedOf = (L, id) => (L.saved || []).find((v) => v.id === id) || null;
+  const sortSaved = (L) => { L.saved.sort((x, y) => x.a - y.a || x.b - y.b); };
+  function setActiveSaved(id) {
+    const s = song(), L = loop();
+    const v = id ? savedOf(L, id) : null;
+    s.activeSavedId = v ? v.id : null;
+    if (v) s.activePhraseIds = null;
+    marks.delete(s.id);
+    changed('phrases', { loopId: s.activeLoopId });
+  }
+  // The MARKED range (drag on the waveform): an unsaved, temporary sub-loop of the active loop, one per song, in memory only
+  // (never persisted, synced or in the undo history). Setting it clears the phrase / saved selection; any other selection,
+  // a loop switch, Esc / Whole loop clear it. → { a, b, loopId } | null
+  function setMarked(r) {
+    const s = song();
+    if (r && typeof r.a === 'number' && typeof r.b === 'number' && isFinite(r.a) && isFinite(r.b)) {
+      const max = Math.min(songMax(s), MAX_T);
+      const a = Math.min(Math.max(0, Math.min(r.a, r.b)), max), b = Math.min(Math.max(r.a, r.b), max);
+      if (!(b - a >= MIN_LEN - EPS)) return null;
+      marks.set(s.id, { a, b, loopId: s.activeLoopId });
+      s.activePhraseIds = null; s.activeSavedId = null;
+    } else marks.delete(s.id);
+    changed('phrases', { loopId: s.activeLoopId });
+    return marked();
+  }
+  function marked() {
+    const s = state && song(), m = s && marks.get(s.id);
+    if (!m) return null;
+    if (m.loopId !== s.activeLoopId) { marks.delete(s.id); return null; }
+    return { a: m.a, b: m.b, loopId: m.loopId };
+  }
+  // → { item, existed } (the new item, or the one that already has this range) or null (no valid range). Selects it.
+  function addSaved(loopId, fields) {
+    const L = phraseCtx(loopId), s = song(), f = fields || {};
+    if (!L.saved) L.saved = [];
+    const max = Math.min(songMax(s), MAX_T);
+    const a = Math.min(Math.max(0, num(f.a, NaN)), max), b = Math.min(num(f.b, NaN), max);
+    if (!(b - a >= MIN_LEN - EPS)) return null;
+    const same = L.saved.find((v) => Math.abs(v.a - a) < SAME_T && Math.abs(v.b - b) < SAME_T);
+    if (same) {
+      if (s.activeLoopId === L.id) { s.activeSavedId = same.id; s.activePhraseIds = null; marks.delete(s.id); }
+      changed('phrases', { loopId: L.id });
+      return { item: same, existed: true };
+    }
+    record('save sub-loop');
+    const v = { id: newId('v'), a, b, name: typeof f.name === 'string' ? f.name.trim().slice(0, SAVED_NAME_MAX) : '', star: false };
+    L.saved.push(v);
+    sortSaved(L);
+    if (s.activeLoopId === L.id) { s.activeSavedId = v.id; s.activePhraseIds = null; marks.delete(s.id); }
+    changed('phrases', { loopId: L.id });
+    return { item: v, existed: false };
+  }
+  function renameSaved(loopId, id, name) {
+    const L = phraseCtx(loopId), v = savedOf(L, id);
+    const n = String(name == null ? '' : name).trim().slice(0, SAVED_NAME_MAX);
+    if (!v || v.name === n) return;
+    record('rename saved sub-loop', 'svname:' + id);
+    v.name = n;
+    changed('phrases', { loopId });
+  }
+  function starSaved(loopId, id, star) {
+    const L = phraseCtx(loopId), v = savedOf(L, id);
+    if (!v) return;
+    const next = typeof star === 'boolean' ? star : !v.star;
+    if (next === v.star) return;
+    record(next ? 'star saved sub-loop' : 'unstar saved sub-loop');
+    v.star = next;
+    changed('phrases', { loopId });
+  }
+  // Edges: inside the track, ≥ MIN_LEN; independent of A/B and of the phrases. A single edge coalesces like a phrase edge.
+  function updateSaved(loopId, id, patch) {
+    const L = phraseCtx(loopId), v = savedOf(L, id);
+    if (!v || !patch) return;
+    const ha = typeof patch.a === 'number' && isFinite(patch.a), hb = typeof patch.b === 'number' && isFinite(patch.b);
+    if (!ha && !hb) return;
+    record('edit saved sub-loop', ha && hb ? null : 'sv' + (ha ? 'a:' : 'b:') + id);
+    const max = Math.min(songMax(song()), MAX_T);
+    if (ha) v.a = Math.min(Math.max(0, patch.a), (hb ? Math.min(max, patch.b) : v.b) - MIN_LEN);
+    if (hb) v.b = Math.max(Math.min(max, patch.b), v.a + MIN_LEN);
+    if (v.a < 0) { v.a = 0; v.b = Math.max(v.b, MIN_LEN); }
+    sortSaved(L);
+    changed('phrases', { loopId });
+  }
+  function removeSaved(loopId, id) {
+    const L = phraseCtx(loopId), i = (L.saved || []).findIndex((v) => v.id === id);
+    if (i < 0) return false;
+    record('delete saved sub-loop');
+    L.saved.splice(i, 1);
+    const s = song();
+    if (s.activeSavedId === id) s.activeSavedId = null;
+    changed('phrases', { loopId });
+    return true;
   }
 
   // ---------- practice / grid ----------
@@ -6905,7 +7089,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     // a placeholder title takes the file's
     if (!s.title || s.title === 'Untitled' || s.title === 'New song') { s.title = src.title || s.title; s.artist = src.artist || s.artist; }
     s.activeLoopId = s.loops[0].id;
-    s.activePhraseIds = null;
+    s.activePhraseIds = null; s.activeSavedId = null;
     changed('loops', { loopId: s.activeLoopId });
     return src;
   }
@@ -7020,6 +7204,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     addSong, renameSong, removeSong, setActive, updateSong, setRate, setLoopOn,
     selectLoop, addLoop, duplicateLoop, removeLoop, updateLoop,
     setPhrases, addPhrase, updatePhrase, splitPhrase, mergePhrase, removePhrase, starPhrase, renamePhrase, setActivePhrases, setPhraseShift, setLanding, normLanding,
+    addSaved, renameSaved, starSaved, updateSaved, removeSaved, setActiveSaved, normSaved, setMarked, marked,
     setPractice, setGrid, setDrills, defaultDrills, normDrills, setTuning, autoTuning, defaultTuning, normTuning,
     TRADE_PRESETS, tradePreset, tradeMatches, tradeOn, applyTrade, toggleTrade,
     history, transact, endGesture, sync,
@@ -8745,7 +8930,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *                         model().taps: the downbeats of a running tap take (drawn per paint); the bar under the playhead
  *                         is tinted per paint on the strip and the waveform (stats.curBar = its span)
  *                             windowEdge('start'|'end', t, phase, ev) → snapped t (rev 2: fixed-length window edges)
- *                             windowCreate(a, b, ev) (Shift-drag on the waveform) · scrub(t, phase) (left-drag)
+ *                             windowCreate(a, b, ev) (Shift-drag on the waveform) · scrub(t, phase) (dragging the playhead line on
+ *                             the waveform, or the overview; touch: one finger anywhere on the waveform)
+ *                             markRange(a, b, phase, ev) → snapped {a, b} (2026-11: a plain mouse left-drag on the waveform marks a
+ *                             sub-loop; 'move' previews it in amber, 'end' commits; a press that moves < 4 px is a click = seek)
+ *                             savedClick(id) (a saved sub-loop's bar along the top of the phrase lane)
+ *                         model().saved: the loop's saved sub-loops [{id, a, b, star}] (thin amber bars along the top of the phrase
+ *                         lane); savedSel: the selected one's id or 'marked'; play.fit 'saved' = an exact range (saved / marked):
+ *                         drawn as an amber box whose edges drag like a window's (on.windowEdge)
  *                             freeChange(isFree) · autoView() (double-click on empty waveform space)
  *                         phase: 'move' (preview, while dragging) | 'end' (commit)
  *   Free view (rev 2): two-finger swipe / Shift+wheel pans, pinch or vertical swipe zooms around the pointer (axis locked
@@ -8792,7 +8984,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       ink: v('--ink'), muted: v('--muted'), faint: v('--faint'), line: v('--line'), lineStrong: v('--line-strong'),
       accent: v('--accent'), accentSoft: v('--accent-soft'), accentMid: v('--accent-mid'), onAccent: v('--on-accent'),
       phrase: v('--phrase'), phraseSoft: v('--phrase-soft'), phraseMid: v('--phrase-mid'), onPhrase: v('--on-phrase'),
-      star: v('--star'), head: v('--head'), wave: v('--wave'), waveIn: v('--wave-in'), leadin: v('--leadin'),
+      star: v('--star'), savedSoft: v('--saved-soft'), savedMid: v('--saved-mid'), head: v('--head'), wave: v('--wave'), waveIn: v('--wave-in'), leadin: v('--leadin'),
       outside: v('--outside'), panel: v('--panel'), field: v('--field'),
       curbar: v('--curbar'), curbarCell: v('--curbar-cell'), tap: v('--tap'),
       ui: v('--font-ui'), mono: v('--font-mono'),
@@ -8808,7 +9000,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (M.scope === 'phrase' && M.range) {
       const bar = M.grid ? GH.beatLength(M.grid, M.range.a) * M.grid.beatsPerBar : 2;
       const P = M.play || M.range;
-      if (M.play && M.play.fit === 'fixed') { // QA3: a fixed-length window is what plays: frame the WINDOW ± 1 bar
+      if (M.play && (M.play.fit === 'fixed' || M.play.fit === 'saved')) { // QA3: a fixed-length window (or an exact range) is what plays: frame it ± 1 bar
         const wb = M.grid ? GH.beatLength(M.grid, P.start) * M.grid.beatsPerBar : 2;
         t0 = P.start - wb; t1 = P.end + wb;
       } else {
@@ -8926,7 +9118,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const X = (t) => t / d * w;
     g.fillStyle = colors.accentSoft;
     g.fillRect(X(M.loop.a), 0, Math.max(1, X(M.loop.b) - X(M.loop.a)), h);
-    if (M.range) { g.fillStyle = colors.phraseMid; g.fillRect(X(M.range.a), 0, Math.max(1, X(M.range.b) - X(M.range.a)), h); }
+    if (M.range) { g.fillStyle = M.play && M.play.fit === 'saved' ? colors.savedMid : colors.phraseMid; g.fillRect(X(M.range.a), 0, Math.max(1, X(M.range.b) - X(M.range.a)), h); }
     if (M.peaks) drawPeaks(g, M.peaks, 0, d, w, h, (t) => (t >= M.loop.a && t <= M.loop.b ? colors.waveIn : colors.wave), 0, h);
     if (M.grid) {
       g.fillStyle = colors.ink;
@@ -8996,14 +9188,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   function buildWave(g, w, h, M, t0, t1) {
     const X = (t) => (t - t0) / (t1 - t0) * w;
     const k = dpr();
+    const exact = !!(M.range && M.play && M.play.fit === 'saved'); // a saved sub-loop / the marked range: its exact range
     const fixedWin = !!(M.range && M.play && M.play.fit === 'fixed');
+    const boxWin = fixedWin || exact;
     const xa = X(M.loop.a), xb = X(M.loop.b);
     // outside the loop
     g.fillStyle = colors.outside;
     if (xa > 0) g.fillRect(0, 0, xa, h);
     if (xb < w) g.fillRect(xb, 0, w - xb, h);
     // range, lead-in
-    if (M.range) {
+    if (exact) {
+      g.fillStyle = colors.savedSoft;
+      g.fillRect(X(M.play.start), 0, X(M.play.end) - X(M.play.start), h);
+    } else if (M.range) {
       const P = M.play || { start: M.range.a, end: M.range.b };
       g.fillStyle = colors.leadin;
       if (M.range.a - P.start > 1e-3) g.fillRect(X(P.start), 0, X(M.range.a) - X(P.start), h);
@@ -9027,7 +9224,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
           for (let j = 1; j < M.grid.beatsPerBar; j++) {
             const tb = b.time + j * bl, xt = Math.round(X(tb));
             // inside a fixed window the beat ticks are longer, so its edges are seen to sit on them (QA3)
-            const tl = (fixedWin && tb >= M.play.start - 1e-3 && tb <= M.play.end + 1e-3 ? 9 : 4) * k;
+            const tl = (boxWin && tb >= M.play.start - 1e-3 && tb <= M.play.end + 1e-3 ? 9 : 4) * k;
             g.fillRect(xt, 0, Math.max(1, Math.round(k)), tl);
             g.fillRect(xt, h - tl, Math.max(1, Math.round(k)), tl);
           }
@@ -9039,7 +9236,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       const r = M.range;
       stats.zoomNorm = spanNorm(M.peaks, t0, t1);
       const P = r && M.play;
-      drawPeaks(g, M.peaks, t0, t1, w, h, (t) => (r && t >= r.a && t <= r.b ? colors.phrase
+      drawPeaks(g, M.peaks, t0, t1, w, h, (t) => (r && t >= r.a && t <= r.b ? (exact ? colors.star : colors.phrase)
         : ((t >= M.loop.a && t <= M.loop.b) || (P && t >= P.start && t <= P.end) ? colors.waveIn : colors.wave)), 10 * k, h - 14 * k, stats.zoomNorm);
     }
     // solo-activity envelope from the detector: a quiet filled trace along the bottom
@@ -9068,7 +9265,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     g.fillRect(Math.round(xb - lw / 2), 0, lw, h);
     // fixed-length window (rev 2; QA3: drawn over the A/B lines, with a bracket along the top and bottom so even a 50 px
     // window at Loop zoom reads as one unit, distinct from the phrase tint and from A/B): edges on beat ticks, draggable
-    if (fixedWin) {
+    if (boxWin) {
       g.fillStyle = colors.star;
       const ew = Math.max(2, Math.round(2 * k));
       const xs = Math.round(X(M.play.start)), xe = Math.max(xs + ew, Math.round(X(M.play.end)));
@@ -9153,6 +9350,20 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       }
       g.restore();
     }
+    // saved sub-loops: thin amber bars along the top edge (the selected one thicker, drawn last); a click on one selects it
+    const sv = M.saved || [];
+    for (const pass of [0, 1]) {
+      for (const v of sv) {
+        const sel = M.savedSel === v.id;
+        if ((pass === 1) !== sel) continue;
+        const x0 = Math.max(0, X(v.a)), x1 = Math.min(w, X(v.b));
+        if (x1 - x0 < 1) continue;
+        g.fillStyle = colors.star;
+        g.globalAlpha = sel ? 1 : 0.7;
+        g.fillRect(x0 + k, 0, Math.max(1, x1 - x0 - 2 * k), Math.round((sel ? 4 : 3) * k));
+        g.globalAlpha = 1;
+      }
+    }
     if (drag && drag.kind === 'create' && drag.b != null) {
       const a = Math.min(drag.a, drag.b), b = Math.max(drag.a, drag.b);
       g.setLineDash([4 * k, 3 * k]);
@@ -9214,7 +9425,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     stats.curBar = cur;
     paintLane('bars', M, t0, t1, buildBars, drag && drag.kind === 'bar' ? dragStamp : '', M.playhead, cur);
     paintLane('wave', M, t0, t1, buildWave, '', M.playhead, cur);
-    paintLane('phr', M, t0, t1, buildPhrases, (drag && (drag.kind === 'phrase' || drag.kind === 'create') ? dragStamp : '') + '|' + M.focusId + '|' + M.playingId, M.playhead);
+    paintLane('phr', M, t0, t1, buildPhrases, (drag && (drag.kind === 'phrase' || drag.kind === 'create') ? dragStamp : '') + '|' + M.focusId + '|' + M.playingId + '|' + M.savedSel, M.playhead);
     overlays(M, t0, t1, d);
     stats.lastPaintMs = performance.now() - t;
     stats.paintMs.push(stats.lastPaintMs);
@@ -9245,6 +9456,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       }
       stats.mark = { a: markSpan.a, b: markSpan.b };
     } else stats.mark = null;
+    if (drag && drag.kind === 'mark' && drag.span) { // the range being marked, live, in amber
+      const c = cv.wave, g = c.getContext('2d'), w = c.width, h = c.height;
+      const X = (t) => (t - t0) / (t1 - t0) * w, x0 = X(drag.span.a), x1 = X(drag.span.b);
+      g.save();
+      g.fillStyle = colors.savedSoft; g.fillRect(x0, 0, x1 - x0, h);
+      g.strokeStyle = colors.star; g.lineWidth = Math.max(2, Math.round(2 * k));
+      g.strokeRect(x0, 14 * k, x1 - x0, h - 14 * k);
+      g.restore();
+      stats.marking = { a: drag.span.a, b: drag.span.b };
+    }
     if (drag && (drag.kind === 'wedge' || drag.kind === 'wcreate')) {
       const c = cv.wave, g = c.getContext('2d'), w = c.width, h = c.height;
       const X = (t) => (t - t0) / (t1 - t0) * w;
@@ -9323,12 +9544,28 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return best;
   }
 
+  // The playhead line on the zoom waveform (grab it to scrub; mouse: ±6 px).
+  function playheadAt(clientX) {
+    const M = model();
+    if (!M.hasAudio || M.playhead == null) return false;
+    return Math.abs(clientX - xOf('wave', M.playhead)) <= PX_MOUSE;
+  }
+  // A saved sub-loop bar along the top of the phrase lane under the pointer (top 7 px): the selected one first, then the
+  // latest start (drawn on top).
+  function savedAt(e) {
+    const M = model(), sv = M.saved || [];
+    if (!sv.length || e.clientY - cv.phr.getBoundingClientRect().top > 7) return null;
+    const t = tOf('phr', e.clientX);
+    const hits = sv.filter((v) => t >= v.a && t <= v.b);
+    if (!hits.length) return null;
+    return hits.find((v) => v.id === M.savedSel) || hits[hits.length - 1];
+  }
   function capture(c, e) { try { c.setPointerCapture(e.pointerId); } catch (err) { /* synthetic events */ } }
 
   // Fixed-length window edge under the pointer ('start' | 'end'), or null.
   function windowEdgeAt(clientX) {
     const M = model();
-    if (!M.range || !M.play || M.play.fit !== 'fixed') return null;
+    if (!M.range || !M.play || (M.play.fit !== 'fixed' && M.play.fit !== 'saved')) return null;
     const ds = Math.abs(clientX - xOf('wave', M.play.start)), de = Math.abs(clientX - xOf('wave', M.play.end));
     if (Math.min(ds, de) > pxNear) return null;
     return ds <= de ? 'start' : 'end';
@@ -9551,6 +9788,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         capture(cv.wave, e);
         return;
       }
+      // 2026-11: with the mouse (or a pen) a plain drag MARKS a sub-loop; scrubbing is grabbing the playhead line. Touch keeps
+      // one-finger scrubbing anywhere.
+      if ((e.pointerType === 'mouse' || e.pointerType === 'pen') && !playheadAt(e.clientX) && on.markRange) {
+        drag = { kind: 'mark', a: tOf('wave', e.clientX), b: null, x: e.clientX, view: view(), span: null };
+        capture(cv.wave, e);
+        return;
+      }
       drag = { kind: 'seek', view: view() };
       capture(cv.wave, e);
       const t = tOf('wave', e.clientX);
@@ -9566,14 +9810,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         requestPaint();
       } else if (drag && drag.kind === 'wcreate') {
         if (Math.abs(e.clientX - drag.x) > 3) { drag.b = tOf('wave', e.clientX, drag.view); requestPaint(); }
+      } else if (drag && drag.kind === 'mark') {
+        if (drag.b != null || Math.abs(e.clientX - drag.x) >= 4) { drag.b = tOf('wave', e.clientX, drag.view); drag.span = on.markRange(drag.a, drag.b, 'move', e); requestPaint(); }
       } else if (drag && drag.kind === 'seek') {
         const t = tOf('wave', e.clientX, drag.view);
         if (on.scrub) on.scrub(on.snap(t, e), 'move'); else on.seek(t);
       } else if (drag && drag.kind === 'pan' && !drag.ov) {
         panFromDrag(e, cv.wave);
       } else if (!drag) {
-        const hit = waveHit(e);
-        cv.wave.style.cursor = hit ? 'ew-resize' : (model().hasAudio ? (e.shiftKey ? 'crosshair' : 'pointer') : 'default');
+        const hit = waveHit(e) || (playheadAt(e.clientX) && 'head');
+        cv.wave.style.cursor = hit ? 'ew-resize' : (model().hasAudio ? (e.shiftKey ? 'copy' : 'crosshair') : 'default');
+        const tip = hit === 'head' ? 'Drag the playhead to scrub' : !hit && model().hasAudio ? 'Drag to mark a sub-loop on the beats (Alt: free) · click to jump · drag the playhead to scrub · Shift-drag: new phrase' : '';
+        if (cv.wave.title !== tip) cv.wave.title = tip;
       }
     });
     // double-click on empty waveform space: back to the automatic (Loop / Phrase) view
@@ -9589,6 +9837,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     listen(cv.phr, 'pointerdown', (e) => {
       if (rightPan(cv.phr)(e)) return;
       if (e.button !== 0) return;
+      const sh = savedAt(e);
+      if (sh && on.savedClick) { drag = { kind: 'savedclick', id: sh.id }; capture(cv.phr, e); return; }
       const hit = phraseAt(e.clientX);
       capture(cv.phr, e);
       if (hit.edge) { drag = { kind: 'phrase', id: hit.edge.id, which: hit.edge.which, t: null, view: view(), x: e.clientX }; return; }
@@ -9598,7 +9848,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     listen(cv.phr, 'pointermove', (e) => {
       if (!drag) {
         const hit = phraseAt(e.clientX);
-        cv.phr.style.cursor = hit.edge ? 'ew-resize' : (hit.inside ? 'pointer' : 'crosshair');
+        cv.phr.style.cursor = savedAt(e) ? 'pointer' : hit.edge ? 'ew-resize' : (hit.inside ? 'pointer' : 'crosshair');
         return;
       }
       if (drag.kind === 'pan' && !drag.ov) { panFromDrag(e, cv.phr); return; }
@@ -9644,7 +9894,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       else if (d.kind === 'wcreate') {
         if (d.b != null && Math.abs(d.b - d.a) >= 0.1) on.windowCreate(Math.min(d.a, d.b), Math.max(d.a, d.b), e);
         else on.seek(tOf('wave', e.clientX, d.view));
-      } else if (d.kind === 'seek' || d.kind === 'ovseek') { if (on.scrub) on.scrub(null, 'end'); }
+      } else if (d.kind === 'mark') {
+        stats.marking = null;
+        if (d.b != null) on.markRange(d.a, tOf('wave', e.clientX, d.view), 'end', e);
+        else on.seek(on.snap(d.a, e)); // a click (moved < 4 px): seek, as before
+      } else if (d.kind === 'savedclick') on.savedClick(d.id); else if (d.kind === 'seek' || d.kind === 'ovseek') { if (on.scrub) on.scrub(null, 'end'); }
       else if (d.kind === 'phrase') {
         if (d.t != null) on.phraseEdge(d.id, d.which, d.t, 'end', e);
         else on.phraseClick(d.id, e);
@@ -9665,6 +9919,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (d.kind === 'loop') { if (d.t != null) on.loopEdge(d.which, d.t, 'end', e); } // its coordinates may be 0: the last move counts
       else if ((d.kind === 'seek' || d.kind === 'ovseek') && on.scrub) on.scrub(null, 'end');
       if (d.kind === 'bar') on.barMove(d.index, null, 'cancel');
+      if (d.kind === 'mark') stats.marking = null;
       invalidate();
     };
     for (const c of [cv.ov, cv.wave, cv.phr, cv.bars]) {
@@ -9830,7 +10085,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (pl) { lo = Math.min(lo, pl.start); hi = Math.max(hi, pl.end); }
     const pad = Math.max(g ? 0.75 * GH.beatLength(g, lo) : 0.4, (hi - lo) * 0.06);
     const t0 = Math.max(0, lo - pad), t1 = hi + pad;
-    const sig = JSON.stringify([W, H, t0, t1, ph.a, ph.b, pl ? [pl.start, pl.end, pl.fit, !!pl.run] : 0, v.lenText || '', gkey(g), oid(v.peaks), !!v.hasAudio]);
+    const sig = JSON.stringify([W, H, t0, t1, ph.a, ph.b, pl ? [pl.start, pl.end, pl.fit, !!pl.run] : 0, v.lenText || '', gkey(g), oid(v.peaks), !!v.hasAudio, !!v.saved]);
+    // a saved sub-loop / the marked range is drawn in amber (its exact range: no lead tint, no window)
+    const col = v.saved ? 'var(--star)' : 'var(--phrase)', soft = v.saved ? 'var(--saved-soft)' : 'var(--phrase-soft)', on = v.saved ? 'var(--on-saved)' : 'var(--on-phrase)';
     if (P.phrase.sig === sig) { P.phrase.box = box; return; }
     const X = (t) => (t - t0) / (t1 - t0) * W;
     const sH = H >= 96 ? 18 : 15, yL0 = sH + 3, yF = H - 14, yL1 = yF - 3, mid = (yL0 + yL1) / 2;
@@ -9839,11 +10096,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     s += '<defs><clipPath id="slpPhClip"><rect x="' + r1(fa) + '" y="' + yL0 + '" width="' + r1(Math.max(0.5, fb - fa)) + '" height="' + (yL1 - yL0) + '"/></clipPath></defs>';
     s += '<rect x="0" y="0" width="' + W + '" height="' + sH + '" rx="3" fill="var(--field)"/>';
     s += '<rect x="0" y="' + yL0 + '" width="' + W + '" height="' + (yL1 - yL0) + '" rx="3" fill="var(--field)" opacity=".55"/>';
-    if (pl && pl.fit !== 'fixed') { // lead-in / lead-out / fit: the played part outside the phrase, tinted like the main waveform
+    if (pl && pl.fit !== 'fixed' && pl.fit !== 'saved') { // lead-in / lead-out / fit: the played part outside the phrase, tinted like the main waveform
       if (pl.start < ph.a - 1e-6) s += '<rect x="' + r1(X(pl.start)) + '" y="' + yL0 + '" width="' + r1(fa - X(pl.start)) + '" height="' + (yL1 - yL0) + '" fill="var(--leadin)"/>';
       if (pl.end > ph.b + 1e-6) s += '<rect x="' + r1(fb) + '" y="' + yL0 + '" width="' + r1(X(pl.end) - fb) + '" height="' + (yL1 - yL0) + '" fill="var(--leadin)"/>';
     }
-    s += '<rect x="' + r1(fa) + '" y="' + yL0 + '" width="' + r1(fb - fa) + '" height="' + (yL1 - yL0) + '" fill="var(--phrase-soft)"/>';
+    s += '<rect x="' + r1(fa) + '" y="' + yL0 + '" width="' + r1(fb - fa) + '" height="' + (yL1 - yL0) + '" fill="' + soft + '"/>';
     if (g) {
       for (const b of barsIn(g, t0, t1)) {
         const xa = X(b.start), xb = X(b.end), inPh = b.end > ph.a + 1e-6 && b.start < ph.b - 1e-6;
@@ -9861,7 +10118,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       }
     }
     const wp = wavePath(v.peaks, t0, t1, W, mid, (yL1 - yL0) / 2 - 2);
-    if (wp) s += '<path class="wv" d="' + wp + '" fill="var(--wave)"/><path class="wv-in" d="' + wp + '" fill="var(--phrase)" clip-path="url(#slpPhClip)"/>';
+    if (wp) s += '<path class="wv" d="' + wp + '" fill="var(--wave)"/><path class="wv-in" d="' + wp + '" fill="' + col + '" clip-path="url(#slpPhClip)"/>';
     else s += '<text x="' + (W / 2) + '" y="' + (mid + 4) + '" font-size="11" text-anchor="middle" fill="var(--faint)">Load the audio to see the waveform</text>';
     if (pl && pl.fit === 'fixed') {
       const wa = X(pl.start), wb = X(pl.end), lab = esc(v.lenText || '');
@@ -9874,9 +10131,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     }
     s += headG(H, sH, yL1, true);
     const close = fb - fa < 80;
-    s += flag(fa, yL0, yF, 'Start', true, 'var(--phrase)', 'var(--on-phrase)', 40);
+    s += flag(fa, yL0, yF, 'Start', true, col, on, 40);
     // a short phrase: the End flag points outward so the two flags do not cover each other
-    s += flag(fb, yL0, yF, 'End', close, 'var(--phrase)', 'var(--on-phrase)', close ? 32 : 34);
+    s += flag(fb, yL0, yF, 'End', close, col, on, close ? 32 : 34);
     s += '</svg>';
     place('phrase', box, sig, s, { t0, t1, W, seekable: !!v.hasAudio });
     box.classList.toggle('can-seek', !!v.hasAudio);
@@ -10044,6 +10301,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     ['← →', 'seek 2 s (Shift: 1 beat)'], ['↑ ↓', 'speed ±5%'],
     ['J  K', 'previous / next phrase'], ['[  ]', 'previous / next phrase'],
     ['Esc', 'whole loop (closes menu / field first)'], ['S', 'split at playhead'],
+    ['Shift+S', 'save the sub-loop with a name'],
     ['M', 'merge with next'], ['F', 'star phrase'],
     ['Shift+Backspace', 'delete phrase'], ['D', 'detect phrases'],
     ['Z', 'zoom: loop / phrase'], ['G', 'cycle gap'],
@@ -10051,7 +10309,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     ['Y', 'trade on / off (preset: Trade ▾)'],
     ['−  =', 'length: shorter / longer fixed'], [',  .', 'slide window 1 beat (Shift: ½)'],
     ['⌘Z', 'undo'], ['⇧⌘Z', 'redo'],
-    ['Shift+drag', 'new phrase on the beats (waveform)'], ['Drag', 'scrub (waveform, overview)'],
+    ['Shift+drag', 'new phrase on the beats (waveform)'], ['Drag', 'mark a sub-loop on the beats (waveform; Alt: free)'],
+    ['Drag playhead', 'scrub (waveform; overview: drag anywhere)'],
     ['Trackpad', 'two fingers pan, pinch zooms'], ['Right-drag', 'pan the view'],
     ['Double-click', 'back to Loop / Phrase view'],
     ['A  B', 'loop start / end at playhead'], ['Shift+A  B', 'phrase start / end at playhead'],
@@ -10172,12 +10431,18 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const L = v.loop;
     // Selection-only changes update the rows in place (a rebuilt row would swallow a double-click).
     const land = new Map(L.phrases.map((p) => [p.id, v.landing ? v.landing(p) : null]));
+    const saved = v.saved || [], sinfo = new Map(saved.map((x) => [x.id, v.savedInfo ? v.savedInfo(x) : { name: x.name, label: '', len: '' }]));
     const sig = JSON.stringify([L.id, L.a, L.b, editingId, v.detecting, v.hasAudio, L.phrases.map((p) => [p.id, p.a, p.b, p.star, p.name, p.manual,
-      v.grid ? GH.barLabel(v.grid, p.a, p.b) : '', land.get(p.id) ? [land.get(p.id).short, land.get(p.id).how] : null]) ]);
+      v.grid ? GH.barLabel(v.grid, p.a, p.b) : '', land.get(p.id) ? [land.get(p.id).short, land.get(p.id).how] : null]),
+      saved.map((x) => [x.id, x.a, x.b, x.star, sinfo.get(x.id)])]);
     if (sig === lastSig) {
       for (const p of L.phrases) {
         const li = ol.querySelector('[data-id="' + p.id + '"]');
         if (li) { li.className = rowClass(v, p); li.setAttribute('aria-selected', String(v.selected.has(p.id))); }
+      }
+      for (const x of saved) {
+        const li = ol.querySelector('[data-saved="' + x.id + '"]');
+        if (li) { li.className = savedClass(v, x); li.setAttribute('aria-selected', String(v.savedSel === x.id)); }
       }
       phraseControls(v);
       return;
@@ -10185,11 +10450,15 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     lastSig = sig;
     const top = ol.scrollTop;
     ol.textContent = '';
+    // saved sub-loops interleave by start: a saved item whose start ≤ a phrase's start comes before that phrase
+    let si = 0;
+    const flushSaved = (upTo) => { while (si < saved.length && saved[si].a <= upTo + 1e-9) ol.append(savedRow(v, saved[si++], sinfo)); };
     if (!L.phrases.length) {
       ol.append(h('li', { class: 'empty-note', text: v.detecting ? 'Detecting phrases…'
         : (v.hasAudio ? 'No phrases yet. Detect (D), or drag on the phrase lane to add one.' : 'No phrases. Load the audio, then Detect.') }));
     }
     L.phrases.forEach((p, i) => {
+      flushSaved(p.a);
       const sel = v.selected.has(p.id);
       const cls = rowClass(v, p);
       const star = h('button', { type: 'button', class: 'star', 'aria-pressed': String(!!p.star), title: p.star ? 'Unstar (F)' : 'Star (F)' });
@@ -10228,13 +10497,48 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       li.addEventListener('dblclick', (e) => { e.preventDefault(); editingId = p.id; api.refresh(); });
       ol.append(li);
     });
+    flushSaved(Infinity);
     ol.scrollTop = top;
     phraseControls(v);
+  }
+  const savedClass = (v, x) => 'row saved' + (v.savedSel === x.id ? ' sel focus' : '') + (outside(v.loop, x) ? ' outside' : '');
+  // A saved sub-loop row: bookmark (no number), star, bold name, "bars 5–6 · 2 bars", a "saved" tag, the length in seconds.
+  function savedRow(v, x, sinfo) {
+    const inf = sinfo.get(x.id), sel = v.savedSel === x.id, ek = 'v:' + x.id;
+    const star = h('button', { type: 'button', class: 'star', 'aria-pressed': String(!!x.star), title: x.star ? 'Unstar (F)' : 'Star (F)' });
+    star.innerHTML = U.STAR_SVG;
+    star.addEventListener('click', (e) => { e.stopPropagation(); api.starSaved(x.id); });
+    star.addEventListener('pointerdown', (e) => e.stopPropagation());
+    const name = h('span', { class: 'name', title: 'Double-click to rename' });
+    if (editingId === ek) {
+      const inp = h('input', { type: 'text', value: x.name || inf.name, autocomplete: 'off', maxlength: '60', 'aria-label': 'Saved sub-loop name' });
+      let done = false;
+      const finish = (commit) => {
+        if (done) return; done = true; editingId = null;
+        if (commit) api.renameSaved(x.id, inp.value); else api.refresh();
+      };
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(true); if (e.key === 'Escape') { e.stopPropagation(); finish(false); } });
+      inp.addEventListener('blur', () => finish(true));
+      inp.addEventListener('click', (e) => e.stopPropagation());
+      name.append(inp);
+      setTimeout(() => { inp.focus(); inp.select(); }, 0);
+    } else name.textContent = inf.name;
+    const n = h('span', { class: 'n', 'aria-hidden': 'true' });
+    n.innerHTML = U.ic('bookmark');
+    const li = h('li', { class: savedClass(v, x), 'data-saved': x.id, 'aria-selected': String(sel), tabindex: '0',
+      title: 'Saved sub-loop: ' + U.fmt(x.a) + ' → ' + U.fmt(x.b) + ' (plays exactly this range) · double-click to rename' },
+      n, star, h('span', { class: 'label' }, name, h('span', { class: 'bars', text: inf.label + (inf.len ? ' · ' + inf.len : '') }), h('span', { class: 'stag', text: 'saved' })),
+      h('span', { class: 'len mono', text: U.fmtLen(x.b - x.a) }));
+    li.addEventListener('click', () => { if (editingId !== ek) api.savedClick(x.id); });
+    li.addEventListener('keydown', (e) => { if (e.key === 'Enter' && editingId !== ek && e.target === li) { e.preventDefault(); api.savedClick(x.id); } });
+    li.addEventListener('dblclick', (e) => { e.preventDefault(); editingId = ek; api.refresh(); });
+    return li;
   }
   function phraseControls(v) {
     const L = v.loop;
     const sc = L.phrases.filter((p) => p.star).length;
-    $('#phrMeta').textContent = L.phrases.length ? L.phrases.length + (sc ? ' · ' + sc + ' starred' : '') : '';
+    const nv = (v.saved || []).length;
+    $('#phrMeta').textContent = L.phrases.length || nv ? L.phrases.length + (sc ? ' · ' + sc + ' starred' : '') + (nv ? ' · ' + nv + ' saved' : '') : '';
     const sens = $('#sens');
     setIfIdle(sens, String(L.phraseSensitivity));
     sens.disabled = !v.hasOnsets;
@@ -10243,16 +10547,22 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     U.label($('#detectBtn'), L.onsets || L.phrases.length ? 'Re-detect' : 'Detect');
     $('#detectBtn').disabled = !v.hasAudio;
     $('#detectAll').disabled = !v.hasAudio;
-    $('#wholeBtn').disabled = !v.selected.size;
+    const sv = v.savedSel ? (v.saved || []).find((x) => x.id === v.savedSel) : null, sub = !!(sv || v.marked);
+    $('#wholeBtn').disabled = !v.selected.size && !sub;
     if (SLP.phone && SLP.phone.selUpdate) SLP.phone.selUpdate(v);
     const has = !!v.focusId;
-    $('#phMerge').disabled = !has;
-    $('#phDel').disabled = !has;
-    $('#phStar').disabled = !has;
-    $('#phStar').setAttribute('aria-pressed', String(!!(has && L.phrases.find((p) => p.id === v.focusId) || {}).star));
+    // a saved sub-loop selected: Star and Delete act on it (Delete takes two clicks); Split / Merge are for phrases
+    $('#phMerge').disabled = !has || sub;
+    $('#phSplit').disabled = sub;
+    $('#phSplit').title = sub ? 'Split works on phrases: press Esc or pick a phrase first' : 'Split at the playhead (S)';
+    $('#phDel').disabled = !has && !sv;
+    $('#phDel').title = sv ? 'Delete the saved sub-loop (two clicks)' : 'Delete the phrase (Shift+Backspace)';
+    $('#phStar').disabled = !has && !sv;
+    $('#phStar').title = sv ? 'Star the saved sub-loop (F)' : 'Star the phrase (F)';
+    $('#phStar').setAttribute('aria-pressed', String(sv ? !!sv.star : !!(has && L.phrases.find((p) => p.id === v.focusId) || {}).star));
   }
   function scrollPhraseIntoView(id) {
-    const li = $('#phraseList [data-id="' + id + '"]');
+    const li = $('#phraseList [data-id="' + id + '"]') || $('#phraseList [data-saved="' + id + '"]');
     if (li) li.scrollIntoView({ block: 'nearest' });
   }
   function detectProgress(text) { $('#detectProgress').textContent = text || ''; }
@@ -10345,10 +10655,28 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       fb.title = v.fitUndo ? 'Put A and B back where they were before the fit'
         : v.grid ? 'Move A and B to bar lines: the nearest one when within a beat, otherwise outward (edits the loop; undoable until the next edit)' : NEED_GRID;
     } else if (v.tab === 'phrase') {
-      const p = v.phrase;
-      for (const el of U.$$('#tabPhrase input, #tabPhrase button')) el.disabled = !p;
+      const p = v.phrase, sv = v.saved;
+      for (const el of U.$$('#tabPhrase input, #tabPhrase button')) el.disabled = !p && !sv;
       $('#inspMeta').textContent = '';
-      if (p) {
+      // a saved sub-loop (or the marked range): chip "Saved" / "Marked" (amber), bar label, length; the Name field renames it,
+      // Start / End edit its range; no Window row, no Landing row
+      $('#tabPhrase').classList.toggle('is-saved', !!sv);
+      const nm = $('#phName');
+      nm.placeholder = sv ? (sv.marked ? 'Save it (Shift+S) to name it' : 'Name') : 'Name (optional)';
+      nm.setAttribute('aria-label', sv ? 'Saved sub-loop name' : 'Phrase name');
+      if (sv) {
+        const lead = h('span', { class: 'chip lead amber' }, h('span', { class: 'dot amber' }), sv.marked ? 'Marked' : 'Saved');
+        setChips($('#phInfo'), [lead, chip(sv.label), sv.len ? chip(sv.len, 'num') : null].filter(Boolean));
+        $('#phInfo').title = (sv.marked ? 'Marked range (not saved)' : 'Saved sub-loop "' + sv.title + '"') + ' · ' + sv.label + ' · ' + sv.len + ' · plays exactly ' + U.fmt(sv.a) + ' → ' + U.fmt(sv.b);
+        setIfIdle(nm, sv.marked ? '' : sv.name || '');
+        nm.disabled = !!sv.marked;
+        setIfIdle(edgeInputs['ph-a'], U.fmt(sv.a));
+        setIfIdle(edgeInputs['ph-b'], U.fmt(sv.b));
+        $('#phMusA').textContent = musPos(g, sv.a);
+        $('#phMusB').textContent = musPos(g, sv.b);
+        setChips($('#phWin'), []);
+        landRow(null, null);
+      } else if (p) {
         const lead = h('span', { class: 'chip lead' }, h('span', { class: 'dot teal' }), 'Phrase ' + (v.phraseIndex + 1) + ' / ' + L.phrases.length);
         setChips($('#phInfo'), [lead, g ? chip(GH.barLabel(g, p.a, p.b)) : null, chip(p.manual ? 'edited' : 'detected', 'opt'), chip(U.fmtLen(p.b - p.a), 'num')].filter(Boolean));
         $('#phInfo').title = 'Phrase ' + (v.phraseIndex + 1) + ' of ' + L.phrases.length + (g ? ' · ' + GH.barLabel(g, p.a, p.b) : '') + (p.manual ? ' · edited' : ' · detected') + ' · ' + U.fmtLen(p.b - p.a);
@@ -10376,8 +10704,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         setChips($('#phWin'), []);
         landRow(null, null);
       }
-      SLP.pics.phrase($('#phPic'), { grid: g, peaks: v.peaks, hasAudio: v.hasAudio, phrase: p ? { a: p.a, b: p.b } : null, play: p ? v.play : null,
-        lenText: v.lenText, label: p ? (v.phraseIndex + 1) + ' of ' + L.phrases.length : '' });
+      SLP.pics.phrase($('#phPic'), { grid: g, peaks: v.peaks, hasAudio: v.hasAudio, phrase: sv ? { a: sv.a, b: sv.b } : p ? { a: p.a, b: p.b } : null, play: sv || p ? v.play : null,
+        lenText: v.lenText, saved: !!sv, label: sv ? (sv.marked ? 'marked range' : 'saved sub-loop ' + sv.title) : p ? (v.phraseIndex + 1) + ' of ' + L.phrases.length : '' });
     } else if (v.tab === 'ear') {
       $('#inspMeta').textContent = ''; // the Ear tab renders itself (SLP.ear.render)
     } else {
@@ -10621,10 +10949,43 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const chip = $('#shapeChip');
     chip.hidden = !info.chip;
     if (chip.textContent !== info.chip) chip.textContent = info.chip || '';
+    // saved sub-loops: the state chip (Saved / Marked) and the Save button
+    const stc = $('#shapeState');
+    stc.hidden = !info.state;
+    if (stc.dataset.v !== (info.state || '')) { stc.dataset.v = info.state || ''; stc.innerHTML = info.state ? U.ic('bookmark') : ''; if (info.state) stc.append(info.state); }
+    stc.title = info.stateTitle || '';
+    seg.classList.toggle('dim', !!info.state);
+    const sb = $('#saveSub'), save = info.save || { disabled: true, title: 'Pick a phrase first' };
+    sb.disabled = !!save.disabled;
+    sb.title = save.title;
     const d = $('#shapeDesc');
     if (d.textContent !== info.desc) { d.textContent = info.desc; d.title = info.desc; }
     groupLines();
   }
+  // The inline name field of Save (Sub-loop card): prefilled with the played bar label; Enter / Save saves, Esc / Cancel closes.
+  let saveWired = false;
+  function saveBox(open, name) {
+    const box = $('#saveBox'), inp = $('#saveName'), wrap = $('#slLen');
+    if (!saveWired) {
+      saveWired = true;
+      const commit = () => { const v = inp.value; saveBox(false); api.saveSubloop(v); };
+      $('#saveOk').addEventListener('click', commit);
+      $('#saveCancel').addEventListener('click', () => saveBox(false));
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); saveBox(false); }
+      });
+    }
+    box.hidden = !open;
+    wrap.classList.toggle('naming', !!open);
+    if (open) {
+      inp.value = name || '';
+      inp.focus({ preventScroll: true });
+      inp.select();
+    } else if (document.activeElement === inp) inp.blur();
+    groupLines();
+  }
+  const saveOpen = () => !$('#saveBox').hidden;
   // Options disclosure (Start, Lead-in, Lead-out): open / closed is a per-viewer preference; a dot on the button and its
   // tooltip name every non-default value while it is closed.
   function optionsOpen(open) {
@@ -10751,7 +11112,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     el.hidden = !text;
   }
 
-  SLP.panels = { init, KEYS, songs, loops, phrases, scrollPhraseIntoView, detectProgress, inspector, transport, time, pos, practice, shape, optionsOpen, practiceText, clickHint, history,
+  SLP.panels = { init, KEYS, songs, loops, phrases, scrollPhraseIntoView, saveBox, saveOpen, detectProgress, inspector, transport, time, pos, practice, shape, optionsOpen, practiceText, clickHint, history,
     GAP_NAMES, gapName, isPause, PAUSES, groupLines, musPos,
     get editingPhrase() { return editingId; } };
 })();
@@ -12720,9 +13081,42 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   // ---------- derived values ----------
   function grid() { return app.gridPreview || song().grid; }
+  // Saved sub-loops (2026-11): the selected saved item of the active loop, or null.
+  function savedNow() {
+    const s = song();
+    if (!s.activeSavedId) return null;
+    return (loop().saved || []).find((v) => v.id === s.activeSavedId) || null;
+  }
+  // The exact-range sub-loop in use: the selected saved item, or the MARKED range (a drag on the waveform; unsaved, memory
+  // only, see SLP.store.setMarked) as { id: 'marked', a, b, name: '', star: false, marked: true }. Both play their exact range.
+  function subNow() {
+    const sv = savedNow();
+    if (sv) return sv;
+    const m = S.marked();
+    return m ? { id: 'marked', a: m.a, b: m.b, name: '', star: false, marked: true } : null;
+  }
+  // "0:52.5"
+  const fmt1 = (t) => { t = Math.max(0, Math.round(t * 10) / 10); const m = Math.floor(t / 60); return m + ':' + (t - m * 60).toFixed(1).padStart(4, '0'); };
+  const capFirst = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  // "bars 5–6" (grid) or "0:52.5–0:55.9"
+  function savedLabel(a, b) { const g = song().grid; return g ? GH.barLabel(g, a, b) : fmt1(a) + '–' + fmt1(b); }
+  function savedName(v) { return v.marked ? 'Marked' : v.name || capFirst(savedLabel(v.a, v.b)); }
+  function savedLen(v) { const g = song().grid; return lengthText({ fit: 'saved', start: v.a, end: v.b, beats: g ? GH.beatPos(g, v.b) - GH.beatPos(g, v.a) : null }); }
   // The selected phrases' span, clipped to the loop (phrases may lie partly outside after A/B moved).
+  // A saved sub-loop: its exact range clamped to the render region is `span`; the engine's range {a, b} (which must lie
+  // inside A/B: SLP.engine.setLoop drops a range outside the loop) is the part of the span inside A/B, or a 0.05 s anchor at
+  // the nearer loop edge when the span lies outside A/B; playInfo turns the difference into lead-in / lead-out, so a pass
+  // plays exactly the span.
   function rangeNow() {
     const s = song(), L = loop();
+    const sv = subNow();
+    if (sv) {
+      const reg = regionNow(), a = Math.max(reg.a, sv.a), b = Math.min(reg.b, sv.b);
+      if (!(b - a >= 0.05)) return null;
+      let ra = Math.max(L.a, a), rb = Math.min(L.b, b);
+      if (!(rb - ra >= 0.05)) { if (b <= L.a + 0.05) { ra = L.a; rb = L.a + 0.05; } else { ra = L.b - 0.05; rb = L.b; } }
+      return { a: ra, b: rb, saved: sv, span: { a, b } };
+    }
     const r = s.activePhraseIds ? S.phraseRange(L.id, s.activePhraseIds) : null;
     if (!r) return null;
     const a = Math.max(L.a, r.a), b = Math.min(L.b, r.b);
@@ -12771,6 +13165,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (r === undefined) r = rangeNow();
     if (!r) return null;
     const s = song(), p = s.practice, g = s.grid, reg = regionNow();
+    // a saved sub-loop plays its exact range: no fit, no leads, no window (clamped to the region only)
+    if (r.saved) {
+      const st = r.span.a, en = r.span.b, beats = g ? GH.beatPos(g, en) - GH.beatPos(g, st) : null;
+      return { start: st, end: en, lead: r.a - st, tail: en - r.b, beats, bars: g ? beats / g.beatsPerBar : null, whole: true, fit: 'saved',
+        saved: r.saved, clamped: st > r.saved.a + 1e-9 || en < r.saved.b - 1e-9 };
+    }
     if (g) {
       if (fixedBeats()) {
         // QA3: a RUN of phrases (shift-click, cumulative) plays whole, fitted to the length's unit (beats, or bars for the
@@ -12793,6 +13193,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // "1 bar" for the bar lengths)
   function lengthText(pi) {
     if (!pi) return '';
+    if (pi.fit === 'saved') {
+      // whole bars / whole beats on the grid ("2 bars", "3 beats"), otherwise seconds
+      if (pi.beats == null) return U.fmtLen(pi.end - pi.start);
+      const n = Math.round(pi.beats), bpb = song().grid.beatsPerBar;
+      if (n >= 1 && Math.abs(pi.beats - n) < 0.03) {
+        if (n % bpb === 0) { const k = n / bpb; return k + (k === 1 ? ' bar' : ' bars'); }
+        return n + (n === 1 ? ' beat' : ' beats');
+      }
+      return U.fmtLen(pi.end - pi.start);
+    }
     if (pi.fit === 'fixed') {
       if (!pi.whole) return '≈' + pi.beats.toFixed(1) + ' beats';
       const n = Math.round(pi.beats), bpb = song().grid ? song().grid.beatsPerBar : 4;
@@ -12810,7 +13220,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const fmtN = (x) => (Math.abs(x - Math.round(x)) < 0.05 ? String(Math.round(x)) : x.toFixed(1));
   function leadParts(pi) {
     const s = song(), g = s.grid, p = s.practice, r = rangeNow();
-    if (!pi || !r || pi.fit === 'fixed' || pi.run) return null;
+    if (!pi || !r || pi.fit === 'fixed' || pi.fit === 'saved' || pi.run) return null;
     let li, lo, core, unit = '';
     if (pi.fit === 'off' || !g) { li = pi.lead; lo = pi.tail; core = r.b - r.a; fmtN.secs = true; }
     else {
@@ -12866,7 +13276,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const pi = playInfo(), gap = song().practice.gap;
     E.setPractice({ gap: gapValue(), gapGrid: gap === '1bar' || gap === '2bar', leadIn: pi ? pi.lead : 0, leadOut: pi ? pi.tail : 0 });
     // fit cannot give whole bars (the range reaches both edges of the playable region): said once per range
-    const key = pi && pi.fit !== 'off' && !pi.whole ? [song().id, loop().id, pi.start, pi.end].join('|') : '';
+    const key = pi && pi.fit !== 'off' && pi.fit !== 'saved' && !pi.whole ? [song().id, loop().id, pi.start, pi.end].join('|') : '';
     if (key && key !== app.fitWarned) {
       U.status(pi.fit === 'fixed' ? 'This window does not fit inside the playable part (the loop ± 2 bars): it plays cut (' + lengthText(pi) + ').'
         : 'This range cannot be fitted to whole ' + (pi.fit === 'bar' ? 'bars' : 'beats') + ' inside the playable part (the loop ± 2 bars): it plays cut (' + lengthText(pi) + ').');
@@ -12875,6 +13285,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const rk = pi && pi.run ? [song().id, loop().id, song().activePhraseIds.join(','), song().practice.length].join('|') : '';
     if (rk && rk !== app.runSaid) U.status('A run of phrases plays whole, fitted to ' + (pi.fit === 'bar' ? 'bars' : 'beats') + ' (' + lengthText(pi) + '): the fixed Length applies to a single phrase.');
     app.runSaid = rk;
+    // a saved sub-loop partly outside the playable part (A/B moved since it was saved): clamped, said once
+    const sk = pi && pi.fit === 'saved' && pi.clamped ? [song().id, loop().id, pi.saved.id, pi.start, pi.end].join('|') : '';
+    if (sk && sk !== app.savedCut) U.status('Saved sub-loop "' + savedName(pi.saved) + '" reaches outside the playable part (the loop ± 2 bars): it plays cut, ' + U.fmt(pi.start) + ' → ' + U.fmt(pi.end) + '.');
+    app.savedCut = sk;
   }
   // Metronome: the engine asks for the beats of each pass it schedules (song seconds), so ticks follow the
   // song's own grid at any speed. Off (null) without a grid.
@@ -12968,8 +13382,27 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       selectPhrases(k, k);
     }
   }
+  // A saved sub-loop row / lane bar was clicked: it becomes the sub-loop and plays (like a phrase click).
+  function selectSaved(id, opts) {
+    const L = loop(), v = (L.saved || []).find((x) => x.id === id);
+    if (!v) return;
+    const o = Object.assign({ play: true, now: true }, opts);
+    followTab('phrase');
+    S.setActiveSaved(id);
+    app.focusId = null; app.anchorId = null;
+    if (!rangeNow()) {
+      S.setActivePhrases(null);
+      U.status('Saved sub-loop "' + savedName(v) + '" lies outside the playable part of this loop (A/B moved). Widen the loop to play it.');
+      return;
+    }
+    applyPractice();
+    E.setRange(rangeNow(), { now: o.now });
+    if (o.play && E.hasAudio && !E.state.playing) E.play();
+    W.invalidate();
+    P.scrollPhraseIntoView(id);
+  }
   function wholeLoop() {
-    if (!song().activePhraseIds && !E.range) return;
+    if (!song().activePhraseIds && !song().activeSavedId && !S.marked() && !E.range) return;
     S.setActivePhrases(null);
     const playing = E.state.playing;
     E.setRange(null);
@@ -13067,9 +13500,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   // [important part, ladder part]: the ladder part is the one that gives way first when the row is narrow.
   function practiceParts() {
-    const s = song(), p = s.practice, L = loop(), ix = selectedIndices();
+    const s = song(), p = s.practice, L = loop(), ix = selectedIndices(), sv = subNow();
     const parts = [];
-    if (ix) {
+    if (sv) {
+      parts.push(sv.marked ? 'Marked' : 'Saved: ' + savedName(sv));
+      const pi = playInfo();
+      if (pi) parts.push(lengthText(pi));
+    } else if (ix) {
       parts.push((ix[0] === ix[1] ? 'Phrase ' + (ix[0] + 1) : 'Phrases ' + (ix[0] + 1) + '–' + (ix[1] + 1)) + ' of ' + L.phrases.length);
       const pi = playInfo(), len = lengthDetail(pi);
       if (len) parts.push(len + (pi && pi.run ? ' (whole run)' : ''));
@@ -13238,7 +13675,94 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     syncRange();
     W.invalidate();
   }
+  // ---------- saved sub-loops and the marked range (2026-11) ----------
+  // Edges of the exact-range sub-loop in use (inspector ‹ › « » Here / typed time, or a drag on the waveform): a saved item is
+  // one undo step per edit (a drag is one step); the marked range changes in memory only. The engine follows at the next pass.
+  function setSubEdge(sv, which, t) {
+    if (sv.marked) S.setMarked(which === 'a' ? { a: Math.min(t, sv.b - 0.05), b: sv.b } : { a: sv.a, b: Math.max(t, sv.a + 0.05) });
+    else S.updateSaved(loop().id, sv.id, { [which]: t });
+    applyPractice();
+    syncRange();
+    W.invalidate();
+    queue('insp', 'practice');
+  }
+  // Waveform drag of an edge of the drawn amber box: snaps to the nearest beat (Alt: free); 'end' commits.
+  function savedEdgeDrag(sv, which, t, phase, ev) {
+    const g = song().grid;
+    const ts = g && !(ev && ev.altKey) ? GH.nearestBeat(g, t) : t;
+    if (phase !== 'end') return ts;
+    setSubEdge(sv, which === 'start' ? 'a' : 'b', ts);
+    S.endGesture();
+    const nv = subNow();
+    if (nv) U.status((nv.marked ? 'Marked: ' : 'Saved sub-loop "' + savedName(nv) + '": ') + savedLabel(nv.a, nv.b) + ' (' + savedLen(nv) + ').');
+    return t;
+  }
+  // Save (button, Shift+S): the range one pass plays now (a phrase, a run, a window or the marked range) becomes a saved
+  // sub-loop with a name. → null when there is nothing to save (the reason is on the status line).
+  function saveWhy() {
+    const sv = subNow();
+    if (sv && !sv.marked) return 'This saved sub-loop is already saved (rename it in the Phrase tab).';
+    return playInfo() ? '' : 'Pick a phrase first (or drag on the waveform to mark a range): Save keeps the range one pass plays.';
+  }
+  function openSave() {
+    const why = saveWhy();
+    if (why) { U.status(why); return; }
+    const pi = playInfo();
+    app.saveKey = shapeInfo().key;
+    followTab('phrase');
+    P.saveBox(true, capFirst(savedLabel(pi.start, pi.end)));
+  }
+  function saveSubloop(name) {
+    const why = saveWhy();
+    if (why) { U.status(why); return null; }
+    const pi = playInfo(), L = loop();
+    const res = S.addSaved(L.id, { a: pi.start, b: pi.end, name: String(name || '').trim() || capFirst(savedLabel(pi.start, pi.end)) });
+    if (!res) { U.status('This range cannot be saved (shorter than 0.05 s).'); return null; }
+    app.focusId = null; app.anchorId = null;
+    // same span as before: only the engine's anchor / leads change at the next pass, the pass that sounds goes on
+    applyPractice();
+    E.setRange(rangeNow());
+    W.invalidate();
+    const v = res.item;
+    U.status(res.existed ? 'Already saved as "' + savedName(v) + '".' : 'Saved sub-loop "' + savedName(v) + '" (' + savedLabel(v.a, v.b) + ', ' + savedLen(v) + ').');
+    return v;
+  }
+  // Drag on the zoom waveform (mouse): marks a range. Snap (not Off, a grid, no Alt): start to the beat at or before it, end to
+  // the beat at or after it, at least one beat. phase 'move' → the snapped span (drawn live); 'end' → it becomes the MARKED
+  // sub-loop: playing, it loops at once (from the playhead when the playhead is inside it, otherwise from its start);
+  // paused, it is set and Play plays it.
+  function markSpan(a, b, ev) {
+    let x = Math.min(a, b), y = Math.max(a, b);
+    const g = song().grid;
+    if (g && snapMode() !== 'off' && !(ev && ev.altKey)) {
+      const tol = GH.FIT_TOL;
+      const pa = Math.floor(GH.beatPos(g, x + tol) + 1e-9);
+      let pb = Math.ceil(GH.beatPos(g, y - tol) - 1e-9);
+      if (pb <= pa) pb = pa + 1;
+      x = GH.timeOfBeat(g, pa); y = GH.timeOfBeat(g, pb);
+    }
+    return { a: x, b: y };
+  }
+  function markRange(a, b, phase, ev) {
+    const r = markSpan(a, b, ev);
+    if (phase !== 'end') return r;
+    if (!E.hasAudio) return null;
+    const t = E.time, playing = E.state.playing;
+    if (!S.setMarked(r)) { U.status('A marked range needs at least 0.05 s.'); return null; }
+    app.focusId = null; app.anchorId = null;
+    followTab('phrase');
+    const rn = rangeNow();
+    if (!rn) { S.setActivePhrases(null); U.status('This range lies outside the playable part of the loop (the loop ± 2 bars).'); return null; }
+    applyPractice();
+    const pi = playInfo();
+    if (playing && t >= pi.start && t < pi.end - 0.05) { E.setRange(rn); E.seek(t); } // carries on from where it is
+    else E.setRange(rn, { now: true });
+    W.invalidate();
+    U.status('Marked ' + savedLabel(pi.start, pi.end) + ' (' + lengthText(pi) + '): it loops now. Save keeps it (Shift+S); Esc: whole loop.');
+    return r;
+  }
   function splitAtPlayhead(ev) {
+    if (subNow()) { U.status('Split works on phrases: press Esc or pick a phrase first.'); return; }
     if (!needAudio()) return;
     const t = snapT(E.time, ev);
     const q = S.splitPhrase(loop().id, t);
@@ -13248,6 +13772,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     U.status('Split at ' + U.fmt(t) + '.');
   }
   function mergeNext() {
+    if (subNow()) { U.status('Merge works on phrases: press Esc or pick a phrase first.'); return; }
     const p = focusPhrase(), L = loop();
     if (!p) { U.status('Select a phrase first.'); return; }
     const i = L.phrases.indexOf(p);
@@ -13258,7 +13783,33 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (wasSel && song().activePhraseIds && song().activePhraseIds.includes(p.id)) { /* range still valid */ }
     syncRange();
   }
+  // Delete with a saved sub-loop selected: two presses / clicks within 3 s (the Delete button shows "Click again to delete").
+  let delArm = null;
+  function disarmDel() {
+    if (!delArm) return;
+    clearTimeout(delArm); delArm = null;
+    $('#phDel').classList.remove('armed'); U.label($('#phDel'), 'Delete');
+  }
+  function deleteSaved() {
+    const sv = savedNow();
+    if (!sv) return false;
+    if (!delArm) {
+      $('#phDel').classList.add('armed'); U.label($('#phDel'), 'Click again to delete');
+      delArm = setTimeout(disarmDel, 3000);
+      U.status('Delete saved sub-loop "' + savedName(sv) + '"? Click Delete again (or Shift+Backspace) within 3 s.');
+      return true;
+    }
+    disarmDel();
+    const name = savedName(sv);
+    S.removeSaved(loop().id, sv.id);
+    if (E.range && !rangeNow()) wholeLoop(); else syncRange();
+    U.status('Deleted saved sub-loop "' + name + '" (Cmd+Z brings it back).');
+    return true;
+  }
   function deletePhrase() {
+    if (deleteSaved()) return;
+    disarmDel();
+    if (subNow()) { U.status('A marked range is not saved: Esc clears it.'); return; }
     const p = focusPhrase(), L = loop();
     if (!p) { U.status('Select a phrase first.'); return; }
     const i = L.phrases.indexOf(p);
@@ -13269,6 +13820,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (!song().activePhraseIds && E.range) wholeLoop();
   }
   function starFocus() {
+    const sv = subNow();
+    if (sv && !sv.marked) { S.starSaved(loop().id, sv.id); return; }
+    if (sv) { U.status('Save the marked range first (Shift+S), then star it.'); return; }
     const p = focusPhrase();
     if (!p) { U.status('Select a phrase first.'); return; }
     S.starPhrase(loop().id, p.id);
@@ -13407,11 +13961,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return $('#app').dataset.ptab === 'ear' ? 'ear' : pref === 'ear' ? 'loop' : pref;
   }
   function phraseView() {
-    const L = loop(), ix = selectedIndices();
+    const L = loop(), ix = selectedIndices(), sv = savedNow();
     const selected = new Set();
     if (ix) for (let k = ix[0]; k <= ix[1]; k++) selected.add(L.phrases[k].id);
-    const fp = focusPhrase();
+    const fp = subNow() ? null : focusPhrase();
     return { loop: L, grid: song().grid, selected, focusId: fp ? fp.id : null, playingId: app.playingId,
+      saved: L.saved || [], savedSel: sv ? sv.id : null, marked: !!S.marked(), savedInfo: (v) => ({ name: savedName(v), label: savedLabel(v.a, v.b), len: savedLen(v) }),
       hasOnsets: !!L.onsets, detecting: !!(app.detecting && app.detecting.loopId === L.id), hasAudio: E.hasAudio,
       landing: (p) => SLP.landing.describe(L, p, song().grid) };
   }
@@ -13424,7 +13979,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (has('loops')) P.loops(s);
     if (has('phrases')) P.phrases(phraseView());
     if (has('insp')) {
-      const fp = focusPhrase(), L = loop(), ix = selectedIndices(), k = fp ? L.phrases.indexOf(fp) : -1;
+      const sv = subNow(), fp = sv ? null : focusPhrase(), L = loop(), ix = selectedIndices(), k = fp ? L.phrases.indexOf(fp) : -1;
+      const spi = sv ? playInfo() : null;
       // the picture draws what plays when the inspected phrase is (part of) the selected range
       const pi = fp && ix && k >= ix[0] && k <= ix[1] ? playInfo() : null;
       const selected = new Set();
@@ -13434,13 +13990,19 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         tap: app.tap ? { taps: app.tap.taps.length, clean: GH.cleanTaps(app.tap.taps), playing: !!app.st.playing } : null,
         take: takeValid() ? app.take.applied : null, barSel: s.grid ? barSelIndex() : null,
         win: fp ? { text: windowText(fp), fixed: !!fixedBeats(), shift: fp.shift || 0, length: (SHAPE_NAMES[s.practice.length] || lenName(s.practice.length)).toLowerCase() } : null,
-        peaks: E.peaks, play: pi, lenText: pi ? lengthDetail(pi) : '', selected, playhead: E.hasAudio ? E.time : null,
-        landing: fp ? SLP.landing.describe(L, fp, s.grid) : null });
+        peaks: E.peaks, play: sv ? spi : pi, lenText: sv ? (spi ? lengthText(spi) : '') : pi ? lengthDetail(pi) : '', selected, playhead: E.hasAudio ? E.time : null,
+        landing: fp ? SLP.landing.describe(L, fp, s.grid) : null,
+        saved: sv ? { id: sv.id, marked: !!sv.marked, a: sv.a, b: sv.b, star: sv.star, name: sv.name, title: savedName(sv), label: savedLabel(sv.a, sv.b), len: savedLen(sv) } : null });
     }
     if (has('insp') || has('practice')) SLP.ear.render();
     if (has('transport')) P.transport({ song: s, st: app.st, hasAudio: E.hasAudio, engineText: engineText(), smooth: app.st.smooth === 'ready' && app.st.mode === 'buffer' });
     if (has('practice')) P.practice(s);
-    if (has('practice') || has('practiceText') || has('phrases') || has('loops') || has('insp')) { noteShape(); P.shape(s, shapeInfo()); }
+    if (has('practice') || has('practiceText') || has('phrases') || has('loops') || has('insp')) {
+      noteShape();
+      const si = shapeInfo();
+      if (P.saveOpen() && si.key !== app.saveKey) P.saveBox(false); // the range changed under an open name field: it no longer applies
+      P.shape(s, si);
+    }
     if (has('practice') || has('transport')) P.clickHint(clickHintText());
     if (has('practiceText') || has('practice') || has('phrases')) P.practiceText(practiceParts());
     if (has('hist')) P.history(S.history);
@@ -13509,19 +14071,22 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   });
   E.on('error', (e) => U.status(e.message, true));
   E.on('range', () => {
-    if (song().activePhraseIds) S.setActivePhrases(null);
+    if (song().activePhraseIds || song().activeSavedId || S.marked()) S.setActivePhrases(null);
     W.invalidate();
   });
 
   // ---------- canvases ----------
   function model() {
-    const s = song(), L = loop(), ix = selectedIndices();
+    const s = song(), L = loop(), ix = selectedIndices(), sv = subNow();
     const selected = new Set();
     if (ix) for (let k = ix[0]; k <= ix[1]; k++) selected.add(L.phrases[k].id);
-    const fp = L.phrases.find((p) => p.id === app.focusId);
+    const fp = sv ? null : L.phrases.find((p) => p.id === app.focusId);
+    const pi = playInfo();
     return {
       hasAudio: E.hasAudio, duration: E.duration || s.duration || s.sourceDuration || 0, peaks: E.peaks,
-      loop: { a: L.a, b: L.b }, range: rangeNow(), play: playInfo(),
+      // a saved sub-loop: `range` is its played span (the engine's anchor inside A/B is an engine detail)
+      loop: { a: L.a, b: L.b }, range: sv && pi ? { a: pi.start, b: pi.end } : rangeNow(), play: pi,
+      saved: L.saved || [], savedSel: sv ? sv.id : null,
       playhead: E.hasAudio ? E.time : null, playing: !!app.st.playing,
       phrases: L.phrases, selected, focusId: fp ? fp.id : null, playingId: app.playingId, grid: grid(),
       activity: app.activity.get(actKey(L)) || null, scope: U.prefs.get('zoomScope'),
@@ -13581,6 +14146,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       snap: snapT,
       loopEdge: (which, t, phase) => { setLoopEdge(which, t, phase === 'end'); if (phase === 'end') S.endGesture(); },
       windowEdge: (which, t, phase, ev) => windowEdge(which, t, phase, ev),
+      markRange: (a, b, phase, ev) => markRange(a, b, phase, ev),
+      savedClick: (id) => selectSaved(id),
       windowCreate: (a, b, ev) => windowCreate(a, b, ev),
       phraseClick: (id, ev) => phraseClick(id, ev),
       phraseEdge: (id, which, t, phase) => { if (phase === 'end') setPhraseEdge(id, which, t); },
@@ -13609,6 +14176,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     phraseClick,
     starPhrase: (id) => { S.starPhrase(loop().id, id); app.focusId = id; },
     renamePhrase: (id, name) => S.renamePhrase(loop().id, id, name),
+    savedClick: (id) => selectSaved(id),
+    starSaved: (id) => S.starSaved(loop().id, id),
+    renameSaved: (id, name) => S.renameSaved(loop().id, id, name),
+    openSave, saveSubloop: (name) => saveSubloop(name),
     refresh: () => queue('all'),
     seek: (t) => { if (!E.hasAudio) return; E.seek(t); W.requestPaint(); },
     // Kelly's landing note of the inspected phrase: kind 'midi' (the real note), 'skip' (never asked), 'auto' (forget the correction)
@@ -13642,6 +14213,15 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         E.seek(which === 'a' ? L2.a : Math.max(L2.a, L2.b - 2));
         if (!E.state.playing) E.play();
       } else {
+        const sv = subNow();
+        if (sv) {
+          setSubEdge(sv, which, sv[which] + by);
+          if (!E.hasAudio) return;
+          const nv = subNow() || sv;
+          E.seek(which === 'b' ? Math.max(nv.a, nv.b - 2) : nv.a);
+          if (!E.state.playing) E.play();
+          return;
+        }
         const p = focusPhrase();
         if (!p) { U.status('Select a phrase first.'); return; }
         setPhraseEdge(p.id, which, p[which] + by);
@@ -13660,6 +14240,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (!isFinite(t)) { U.status('Use a time like 1:07.467 or 67.467.', true); queue('insp'); return; }
       if (target === 'bar') setBarLine(barSelIndex(), t);
       else if (target === 'loop') setLoopEdge(which, t, true);
+      else if (subNow()) setSubEdge(subNow(), which, t);
       else { const p = focusPhrase(); if (p) setPhraseEdge(p.id, which, t); }
       input.value = '';
       queue('insp');
@@ -13669,6 +14250,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (!needAudio()) return;
       const t = snapT(E.time, ev, target);
       if (target === 'loop') setLoopEdge(which, t, true);
+      else if (subNow()) setSubEdge(subNow(), which, t);
       else { const p = focusPhrase(); if (!p) { U.status('Select a phrase first.'); return; } setPhraseEdge(p.id, which, t); }
     },
   });
@@ -13811,11 +14393,23 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const secs = (x) => x.toFixed(1) + ' s';
     const chip = !pi ? '' : cur === 'phrase' || cur === 'window' ? secs(pi.end - pi.start) : lengthText(pi);
     const chipFull = !pi || cur === 'window' ? chip : cur === 'phrase' ? lengthDetail(pi, chip) : lengthDetail(pi);
+    const sv = subNow();
+    const save = sv && !sv.marked ? { disabled: true, title: 'Already saved' } : pi ? { disabled: false, title: 'Save this sub-loop with a name (Shift+S): keeps the exact range one pass plays now (' + savedLabel(pi.start, pi.end) + ')' }
+      : { disabled: true, title: 'Pick a phrase first' };
+    if (sv) {
+      const len = pi ? lengthText(pi) : '';
+      const where = pi ? savedLabel(pi.start, pi.end) : savedLabel(sv.a, sv.b);
+      return { chip: len, desc: (sv.marked ? 'Marked on the waveform: plays exactly ' + where + (len ? ' (' + len + ')' : '') + ' on every pass. Save keeps it with a name; Esc goes back to the whole loop.'
+        : 'Saved sub-loop "' + savedName(sv) + '": plays exactly ' + where + (len ? ' (' + len + ')' : '') + ' on every pass; Length, Start and the leads do not change it.'),
+        win: n ? lenName(p.length) : '', prev: SHAPE_NAMES[lastShape.get(s.id)] || 'Whole bars', save, state: sv.marked ? 'Marked' : 'Saved', stateTitle: sv.marked ? 'A marked range (drag on the waveform): not saved yet' : 'Saved sub-loop "' + savedName(sv) + '"',
+        key: sv.marked ? ['marked', pi ? pi.start.toFixed(4) : '', pi ? pi.end.toFixed(4) : ''].join('|') : 'saved:' + sv.id };
+    }
     const desc = cur === 'window' ? 'A fixed window of ' + lenName(n) + (isBarLen(p.length) ? ' (' + lenName(p.length) + ')' : '') + ' on the grid, starting ' + START_NAMES[p.windowStart] + '. Slide it with , and . (Shift: half a beat), resize with = and −.'
       : cur === 'fitBeat' ? 'A whole number of beats: an edge within a hair of a beat snaps to it, otherwise it stretches outward to the next beat.'
         : cur === 'fitBar' ? 'A whole number of bars: an edge within a hair of a bar line snaps to it, otherwise it stretches outward, so the loop keeps the time signature.'
           : 'Loops exactly the selected phrase or run of phrases, edge to edge.' + (g ? '' : ' On the beat and Whole bars: Needs a bar grid (Grid tab).');
-    return { chip: chipFull, desc, win: n ? lenName(p.length) : '', prev: SHAPE_NAMES[lastShape.get(s.id)] || 'Whole bars' };
+    return { chip: chipFull, desc, win: n ? lenName(p.length) : '', prev: SHAPE_NAMES[lastShape.get(s.id)] || 'Whole bars', save,
+      key: pi ? [s.id, loop().id, pi.start.toFixed(4), pi.end.toFixed(4)].join('|') : '' };
   }
   const START_NAMES = { beat: 'on the beat', phrase: 'at the phrase', half: 'on the half beat' };
   // Fit bars keeps passes whole bars: lead-in / lead-out choices that are not whole bars round up (one undo step).
@@ -13846,8 +14440,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     // Z / Loop go back and stay respected while stepping between fixed lengths.
     let zoomed = '';
     if (n && !wasFixed && rangeNow() && !isRun() && !W.free && U.prefs.get('zoomScope') !== 'phrase') { setScope('phrase'); zoomed = ' Zoomed to the window (Z: whole loop).'; }
-    if (cleared && !n) { U.status('Sub-loop: ' + SHAPE_NAMES[v] + '.' + cleared + extra + zoomed); return; }
-    U.status(n ? 'Window: ' + lenName(n) + ' on the grid, starting ' + START_NAMES[song().practice.windowStart] + ' (, . slide it).' + extra + zoomed
+    const say = (m) => U.status(m + (subNow() ? (subNow().marked ? ' The marked range' : ' The selected saved sub-loop') + ' keeps its exact range.' : ''));
+    if (cleared && !n) { say('Sub-loop: ' + SHAPE_NAMES[v] + '.' + cleared + extra + zoomed); return; }
+    say(n ? 'Window: ' + lenName(n) + ' on the grid, starting ' + START_NAMES[song().practice.windowStart] + ' (, . slide it).' + extra + zoomed
       : 'Sub-loop: ' + SHAPE_NAMES[v] + (v === 'phrase' ? ': the phrase, edge to edge.' : ': each pass is a whole number of ' + (v === 'fitBar' ? 'bars' : 'beats') + '.') + extra + zoomed);
   }
   function setStart(v) {
@@ -13862,7 +14457,10 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return [1, 2, 3, 4, 'bar1', 'bar2', 'bar4'].map((v, i) => ({ v, n: GH.lengthBeats(bpb, v), i })).sort((x, y) => x.n - y.n || x.i - y.i);
   }
   // Keys - and =: step through the fixed lengths. From Phrase / Fit, the one nearest the current played length.
+  const SAVED_SHAPE = 'A saved sub-loop plays its exact range; pick a phrase to change the Sub-loop shape.';
+  const MARKED_SHAPE = 'A marked range plays its exact range; pick a phrase to change the Sub-loop shape.';
   function stepLength(dir) {
+    if (subNow()) { U.status(subNow().marked ? MARKED_SHAPE : SAVED_SHAPE); return; }
     if (!needGrid()) return;
     const list = fixedList(), p = song().practice, cur = fixedBeats();
     let k;
@@ -13882,6 +14480,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   // Keys , and . (Shift: half a beat): slide the window of the selected phrase; the slide is stored per phrase.
   function slideWindow(half) {
+    if (subNow()) { U.status(subNow().marked ? MARKED_SHAPE : SAVED_SHAPE); return; }
     if (!needGrid()) return;
     if (!fixedBeats()) { U.status('Sliding needs a fixed Length (1 beat … 4 bars): press = or choose one.'); return; }
     const ph = shiftPhrase();
@@ -13924,6 +14523,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     return { len, shift: Math.round((nP - base) * 2), start: GH.timeOfBeat(g, nP), end: GH.timeOfBeat(g, nP + nN), ph };
   }
   function windowEdge(which, t, phase, ev) {
+    const sv = subNow();
+    if (sv) return savedEdgeDrag(sv, which, t, phase, ev);
     const c = windowEdgeCalc(which, t, ev);
     if (phase !== 'end') return c ? (which === 'end' ? c.end : c.start) : t;
     if (!c) return t;
@@ -14229,6 +14830,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   $('#phSplit').addEventListener('click', splitAtPlayhead);
   $('#phMerge').addEventListener('click', mergeNext);
   $('#phDel').addEventListener('click', deletePhrase);
+  $('#saveSub').addEventListener('click', openSave);
   $('#phAdd').addEventListener('click', addAtPlayhead);
   $('#phStar').addEventListener('click', starFocus);
 
@@ -14273,7 +14875,12 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     queue('insp');
   });
   $('#loopName').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
-  $('#phName').addEventListener('change', (e) => { const p = focusPhrase(); if (p) S.renamePhrase(loop().id, p.id, e.target.value.trim()); });
+  $('#phName').addEventListener('change', (e) => {
+    const sv = savedNow();
+    if (sv) { S.renameSaved(loop().id, sv.id, e.target.value); return; }
+    if (subNow()) return; // the marked range has no name until it is saved
+    const p = focusPhrase(); if (p) S.renamePhrase(loop().id, p.id, e.target.value.trim());
+  });
   $('#phName').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
   $('#phWinReset').addEventListener('click', () => {
     const p = focusPhrase();
@@ -14502,6 +15109,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   }
   // T: Phrase → Fit bars → Fit beats → Phrase (a fixed length goes back to Phrase)
   function cycleLength() {
+    if (subNow()) { U.status(subNow().marked ? MARKED_SHAPE : SAVED_SHAPE); return; }
     if (!needGrid()) return;
     const order = ['phrase', 'fitBar', 'fitBeat'];
     setLength(order[(order.indexOf(song().practice.length) + 1) % order.length], { clearLead: true });
@@ -14552,6 +15160,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     else if (code === 'KeyK' || e.key === ']') stepPhrase(1);
     else if (e.key === 'Escape') wholeLoop();
     else if (code === 'KeyS' && !sh) splitAtPlayhead(e);
+    else if (code === 'KeyS' && sh) openSave();
     else if (code === 'KeyM') mergeNext();
     else if (code === 'KeyF') starFocus();
     else if (code === 'Backspace' && sh) deletePhrase();
@@ -14568,7 +15177,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (needAudio()) {
         const which = code === 'KeyA' ? 'a' : 'b';
         const t = snapT(E.time, e, sh ? 'phrase' : 'loop');
-        if (sh) { const p = focusPhrase(); if (p) setPhraseEdge(p.id, which, t); else U.status('Select a phrase first.'); }
+        if (sh && subNow()) setSubEdge(subNow(), which, t);
+        else if (sh) { const p = focusPhrase(); if (p) setPhraseEdge(p.id, which, t); else U.status('Select a phrase first.'); }
         else setLoopEdge(which, t, true);
       }
     }
@@ -14631,7 +15241,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
 
   SLP.app = {
     get state() { return app; }, model, practiceText, practiceParts, engineText,
-    selectLoop, selectPhrases, phraseClick, wholeLoop, stepPhrase, detectPhrases, detectBeats, switchSong,
+    selectLoop, selectPhrases, phraseClick, wholeLoop, stepPhrase, selectSaved, openSave, saveSubloop, markRange, markSpan, savedNow, subNow, rangeNow, detectPhrases, detectBeats, switchSong,
     handleFiles, rateUser, setScope, focusPhrase, advance, followTab, playInfo, lengthText,
     regionNow, engLoop, windowText, setLength, stepLength, slideWindow, doHistory, windowEdge, windowCreate, countInBeats, toggleTrade, chooseTrade,
     tapToggle, tapNow, chooseTake, takeValid, setBarLine, nudgeBar, barHere, barSelIndex, selectBar, setFormStart, setChoruses,
