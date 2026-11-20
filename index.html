@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-gk9o2Ps22JEYJhyHEGtj9BP3WG5I/FPG8p+ylGu7Wbc='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JkrEf0zp/9pAI3+LB9CXCARNyECBo4PxNMfEAQxexPw='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -8925,7 +8925,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *                         and after the range are tinted like the lead-in.
  *                         on: seek(t) · loopEdge(which, t, phase, ev) · phraseClick(id, ev)
  *                             phraseEdge(id, which, t, phase, ev) · phraseCreate(a, b, ev)
- *                             barMove(index, t, phase) · barSelect(index) (a click in the strip) · snap(t, ev, kind) → t
+ *                             barMove(index, t, phase) · barSelect(index) (a touch tap in the strip) · barMark(index, shift) (a mouse / pen click: mark the bar and play it) · snap(t, ev, kind) → t
  *                             (kind 'loop' for A/B: Snap Bars puts them on bar lines) · frame(model)
  *                         model().taps: the downbeats of a running tap take (drawn per paint); the bar under the playhead
  *                         is tinted per paint on the strip and the waveform (stats.curBar = its span)
@@ -9862,7 +9862,9 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       }
     });
 
-    // bar strip: drag a bar line, click to seek to the bar start
+    // bar strip: drag a bar line; a mouse / pen click marks that bar and plays it (Shift-click: several bars); a touch tap seeks
+    const barTip = 'Click: loop this bar · Shift-click: loop several bars · drag a bar line: move it';
+    cv.bars.title = barTip;
     listen(cv.bars, 'pointerdown', (e) => {
       if (rightPan(cv.bars)(e)) return;
       if (e.button !== 0) return;
@@ -9871,12 +9873,13 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       if (b) { drag = { kind: 'bar', index: b.index, t: null, view: view(), x: e.clientX }; return; }
       drag = { kind: 'barclick', view: view() };
       const M = model();
-      if (M.grid) { const bb = GH.barAt(M.grid, tOf('bars', e.clientX)); if (on.barSelect) on.barSelect(bb.index); if (M.hasAudio) on.seek(bb.start); }
+      if (M.grid && M.hasAudio && on.barMark && (e.pointerType === 'mouse' || e.pointerType === 'pen')) { on.barMark(GH.barAt(M.grid, tOf('bars', e.clientX)).index, e.shiftKey); }
+      else if (M.grid) { const bb = GH.barAt(M.grid, tOf('bars', e.clientX)); if (on.barSelect) on.barSelect(bb.index); if (M.hasAudio) on.seek(bb.start); }
       else if (M.hasAudio) on.seek(tOf('bars', e.clientX));
       requestPaint();
     });
     listen(cv.bars, 'pointermove', (e) => {
-      if (!drag) { cv.bars.style.cursor = barLineAt(e.clientX) ? 'ew-resize' : 'pointer'; return; }
+      if (!drag) { cv.bars.style.cursor = barLineAt(e.clientX) ? 'ew-resize' : 'pointer'; cv.bars.title = barTip; return; }
       if (drag.kind === 'pan' && !drag.ov) { panFromDrag(e, cv.bars); return; }
       if (drag.kind === 'bar' && Math.abs(e.clientX - drag.x) > 2) {
         drag.t = tOf('bars', e.clientX, drag.view);
@@ -10309,7 +10312,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     ['Y', 'trade on / off (preset: Trade ▾)'],
     ['−  =', 'length: shorter / longer fixed'], [',  .', 'slide window 1 beat (Shift: ½)'],
     ['⌘Z', 'undo'], ['⇧⌘Z', 'redo'],
-    ['Shift+drag', 'new phrase on the beats (waveform)'], ['Drag', 'mark a sub-loop on the beats (waveform; Alt: free)'],
+    ['Click bar', 'loop that bar and play it (Bars strip; Shift: several bars)'], ['Shift+drag', 'new phrase on the beats (waveform)'], ['Drag', 'mark a sub-loop on the beats (waveform; Alt: free)'],
     ['Drag playhead', 'scrub (waveform; overview: drag anywhere)'],
     ['Trackpad', 'two fingers pan, pinch zooms'], ['Right-drag', 'pan the view'],
     ['Double-click', 'back to Loop / Phrase view'],
@@ -13033,6 +13036,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     passEvents: 0,
     tap: null,                   // tap mode: { taps: [song seconds], songId } (session only)
     take: null,                  // the last take, while its two versions are offered (keep / even)
+    barAnchor: null,             // { i, a, b }: the bar last clicked in the Bars strip (anchor of a Shift-click range)
     barSel: null,                // bar line (index) the Grid tab's "Bar line" editor acts on, when chosen by a click / nudge
   };
   const song = () => S.song();
@@ -13743,8 +13747,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     }
     return { a: x, b: y };
   }
-  function markRange(a, b, phase, ev) {
-    const r = markSpan(a, b, ev);
+  // opts.play (a click on a bar in the Bars strip): the range plays from its START at once, paused or not, and the span is
+  // taken exactly as given (bar lines), never re-snapped.
+  function markRange(a, b, phase, ev, opts) {
+    const play = !!(opts && opts.play);
+    const r = play ? { a: Math.min(a, b), b: Math.max(a, b) } : markSpan(a, b, ev);
     if (phase !== 'end') return r;
     if (!E.hasAudio) return null;
     const t = E.time, playing = E.state.playing;
@@ -13755,11 +13762,41 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (!rn) { S.setActivePhrases(null); U.status('This range lies outside the playable part of the loop (the loop ± 2 bars).'); return null; }
     applyPractice();
     const pi = playInfo();
-    if (playing && t >= pi.start && t < pi.end - 0.05) { E.setRange(rn); E.seek(t); } // carries on from where it is
+    if (play) { E.setRange(rn, { now: true }); if (!E.state.playing) E.play(); }
+    else if (playing && t >= pi.start && t < pi.end - 0.05) { E.setRange(rn); E.seek(t); } // carries on from where it is
     else E.setRange(rn, { now: true });
     W.invalidate();
     U.status('Marked ' + savedLabel(pi.start, pi.end) + ' (' + lengthText(pi) + '): it loops now. Save keeps it (Shift+S); Esc: whole loop.');
     return r;
+  }
+  // A mouse / pen click in the Bars strip (not on a bar line): that bar becomes the MARKED range and plays from its start
+  // (Shift-click: the contiguous bars from the anchor, the bar last clicked without Shift, else where the marked range
+  // starts, to this one). The Grid tab's bar choice (app.barSel) is set as before. A bar wholly outside the render region
+  // keeps the old click (choose + seek) and says so; a partly outside one is clamped like any marked range.
+  function barMark(i, shift) {
+    const g = song().grid;
+    if (!g) return;
+    if (!E.hasAudio) { selectBar(i, false); return; }
+    const line = (k) => GH.lineAt(g, k), reg = regionNow();
+    const outside = (k) => line(k + 1) <= reg.a + 0.05 || line(k) >= reg.b - 0.05;
+    if (outside(i)) {
+      selectBar(i, true);
+      U.status('Bar ' + GH.barAt(g, line(i) + 0.001).barInChorus + ' is outside this loop\'s range: pick it from its own loop.');
+      return;
+    }
+    const m = S.marked(), near = (x, y) => Math.abs(x - y) < 1e-6;
+    let anchor = i;
+    if (shift) {
+      if (app.barAnchor && m && near(m.a, app.barAnchor.a) && near(m.b, app.barAnchor.b)) anchor = app.barAnchor.i;
+      else if (m) anchor = GH.barAt(g, m.a + 0.001).index;
+    }
+    const lo = Math.min(anchor, i), hi = Math.max(anchor, i);
+    const r = markRange(line(lo), line(hi + 1), 'end', null, { play: true });
+    const m2 = S.marked();
+    if (!r || !m2) { selectBar(i, false); return; }
+    app.barAnchor = { i: anchor, a: m2.a, b: m2.b };
+    app.barSel = lo; // the playhead starts in this bar, so the Grid tab keeps it (barSelIndex)
+    queue('insp');
   }
   function splitAtPlayhead(ev) {
     if (subNow()) { U.status('Split works on phrases: press Esc or pick a phrase first.'); return; }
@@ -14161,7 +14198,8 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
         if (!g) return;
         if (phase === 'end') { app.gridPreview = null; S.setGrid(GH.moveBar(g, index, t), { label: 'drag bar line' }); app.barSel = index; afterGridChange(); } else app.gridPreview = GH.moveBar(g, index, t);
       },
-      barSelect: (index) => selectBar(index, false), // a click in the Bars strip (it also seeks to the bar start)
+      barSelect: (index) => selectBar(index, false), // touch tap in the Bars strip: choose the bar (the strip seeks to its start)
+      barMark: (index, shift) => barMark(index, shift), // mouse / pen click in the strip: mark that bar and play it
       frame: onFrame,
       scrub: onScrub,
       phraseStep: (dir) => stepPhrase(dir), // touch: a swipe on the phrase lane
@@ -14350,11 +14388,17 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // Space and Play (owner rule, 2026-11): when a PHRASE is looped (one phrase, a run, a fixed-length window) and playback
   // is paused, they start that phrase's pass again from its BEGINNING (the played start, lead-in included; count-in and the
   // pass counter as on a fresh start). Shift+Space (Shift-click on Play) resumes where it stopped. The whole loop (no
-  // phrase selected): play / pause as always, resuming in place.
+  // phrase selected) with Loop on does the same: it starts again from the loop start A. With Loop off there is no loop to
+  // restart: resume in place. Marked and saved ranges are ranges (rangeNow) and restart like phrases.
+  // A seek after Space / Play paused (a click on the waveform or the overview, typed time …) means "play from here": the
+  // next Space / Play starts at that point instead of restarting (2026-11-20).
+  let pausedAt = null;
   function playPause(resume) {
     if (!needAudio()) return;
-    if (E.state.playing) { E.pause(); return; }
-    if (!resume && rangeNow() && E.range) { E.restart(); return; }
+    if (E.state.playing) { E.pause(); pausedAt = E.time; return; }
+    const moved = pausedAt != null && Math.abs(E.time - pausedAt) > 0.05;
+    pausedAt = null;
+    if (!resume && !moved && ((rangeNow() && E.range) || song().loopOn)) { E.restart(); return; }
     E.play();
   }
   $('#play').addEventListener('click', (e) => playPause(e.shiftKey));
@@ -15244,7 +15288,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     selectLoop, selectPhrases, phraseClick, wholeLoop, stepPhrase, selectSaved, openSave, saveSubloop, markRange, markSpan, savedNow, subNow, rangeNow, detectPhrases, detectBeats, switchSong,
     handleFiles, rateUser, setScope, focusPhrase, advance, followTab, playInfo, lengthText,
     regionNow, engLoop, windowText, setLength, stepLength, slideWindow, doHistory, windowEdge, windowCreate, countInBeats, toggleTrade, chooseTrade,
-    tapToggle, tapNow, chooseTake, takeValid, setBarLine, nudgeBar, barHere, barSelIndex, selectBar, setFormStart, setChoruses,
+    tapToggle, tapNow, chooseTake, takeValid, setBarLine, nudgeBar, barHere, barSelIndex, selectBar, barMark, setFormStart, setChoruses,
     setSnap, snapMode, snapT, posInfo, playPause,
     get jobs() { return { phrases: phraseJobs.busy, beats: beatJobs.busy }; },
   };
