@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-k7xkgxMK2kJf41AUBS3H5KhjcRuABhukCofa9swM690='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-VswjjckVg4smQs89nqqaMA8gtT/o4e+DJ8ziWi4sPRs='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -7759,11 +7759,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  * Events      on(name, fn) → off()
  *             'state' (state object, on any change) · 'loaded' {name, duration, decoded, durationMismatch}
  *             'error' {kind: 'decode'|'media'|'render', message} · 'range' (null, when seek/setLoop dropped the range)
+ *             'stall' {state}: buffer playback's clock did not move for cfg.stallMs (0 = off; the phone: 900): paused, and
+ *               the next Play starts a fresh AudioContext (see staleCtx)
  *             'pass' {count, at}: fired when a pass is about to finish — in buffer mode when the next pass is
  *               scheduled (≤ 0.2 s before the boundary), in media mode at the wrap. Calls to setRange/setRate/
  *               setPractice made inside the handler apply to the very next pass (auto-advance, ladder, cumulative).
  *               `count` = passes of the current range (reset by setRange, setLoop and restart).
- * Config      configure({pvWorkerSource, pvWorkerUrl, cacheBytes, decode}) — default source: <script type="text/plain" id="pvWorkerSrc">.
+ * Config      configure({pvWorkerSource, pvWorkerUrl, cacheBytes, decode, freshCtx, stallMs}) — default source: <script type="text/plain" id="pvWorkerSrc">.
+ *             freshCtx (the phone): Play replaces a context that is not running; stallMs: the stall watchdog (0 = off).
  *             cacheBytes (test hook): render-cache cap. decode: false (test hook) skips decoding, as while a long file decodes.
  * loadFile    resolves true when the file plays; false when it is not audio at all (decode AND <audio> both fail):
  *             then the engine is unloaded again, an 'error' {kind: 'decode'} is emitted and no 'loaded' follows.
@@ -7805,7 +7808,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const PRESET_DEBOUNCE = 800;  // ms; a loop must stay active this long before its preset speeds are prerendered
 
   // ---------- events ----------
-  const listeners = { state: new Set(), pass: new Set(), loaded: new Set(), error: new Set(), range: new Set() };
+  const listeners = { state: new Set(), pass: new Set(), loaded: new Set(), error: new Set(), range: new Set(), stall: new Set() };
   function on(name, fn) { listeners[name].add(fn); return () => listeners[name].delete(fn); }
   function emit(name, detail) {
     for (const fn of [...listeners[name]]) { try { fn(detail); } catch (e) { setTimeout(() => { throw e; }); } }
@@ -7816,7 +7819,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   let held = null; // the speed still playing while the render for `rate` is prepared (buffer playback only), else null
   const PAD = 4; // default render padding (s) when setLoop gets no region
   const practice = { gap: 0, leadIn: 0, leadOut: 0, gapGrid: false };
-  const cfg = { pvWorkerSource: null, pvWorkerUrl: null, cacheBytes: CACHE_BYTES, decode: true, musicGain: 1, presetRates: [] };
+  const cfg = { pvWorkerSource: null, pvWorkerUrl: null, cacheBytes: CACHE_BYTES, decode: true, musicGain: 1, presetRates: [], freshCtx: false, stallMs: 0 };
   const click = { beats: null, volume: 0.5, when: 'always', countIn: null };
   const isOne = (r) => Math.abs(r - 1) < RATE_ONE;
   const keyOf = (a, b, r) => a.toFixed(4) + '|' + b.toFixed(4) + '|' + r.toFixed(3);
@@ -7877,6 +7880,36 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const ts = ctx.getOutputTimestamp ? ctx.getOutputTimestamp() : null;
     if (ts && ts.performanceTime > 0) return Math.min(ctx.currentTime, ts.contextTime + (performance.now() - ts.performanceTime) / 1000);
     return ctx.currentTime - (ctx.outputLatency || 0);
+  }
+  // A stuck AudioContext (2026-11-21, iPhone): after the page was in the background, or while a second copy of the page
+  // holds the phone's audio, resume() can do nothing: the clock stands still, so Play shows Pause while no sound plays and
+  // the playhead never moves. Play (a user gesture) replaces a context that is stale — 'interrupted', marked suspect by the
+  // watchdog / markStale(), or (cfg.freshCtx, the phone) simply not running — with a fresh one; decoded audio and renders
+  // are AudioBuffers, which any context can play. The watchdog: buffer playback whose clock has not moved stallMs after it
+  // started pauses, marks the context suspect (the next Play gets a fresh one) and emits 'stall'.
+  let ctxSuspect = false, watch = null, ctxCount = 0;
+  function staleCtx() {
+    if (!ctx) return false;
+    return ctxSuspect || ctx.state === 'interrupted' || ctx.state === 'closed' || (cfg.freshCtx && ctx.state !== 'running');
+  }
+  function freshCtx() {
+    const old = ctx;
+    stopAllPasses();
+    scrubStop();
+    ctx = null; ctxSuspect = false;
+    getCtx();
+    ctxCount++;
+    try { if (old && old.state !== 'closed') old.close().catch(() => {}); } catch (e) { /* already closed */ }
+  }
+  function armWatch() { watch = ctx && cfg.stallMs > 0 ? { ct: ctx.currentTime, at: performance.now() } : null; }
+  function checkWatch() {
+    if (!watch || !ctx) return;
+    if (ctx.currentTime > watch.ct + 0.02) { watch = null; return; }
+    if (performance.now() - watch.at < cfg.stallMs) return;
+    watch = null;
+    ctxSuspect = true;
+    pause();
+    emit('stall', { state: ctx.state });
   }
 
   // ---------- media element ----------
@@ -8094,9 +8127,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   // continuous: playback is already audible at song time s0 (handover from media, speed change),
   // so the first pass starts where that playback will be when the pass becomes audible.
   function startPasses(s0, continuous) {
+    if (staleCtx()) freshCtx();
     const c = getCtx();
     if (c.state !== 'running') c.resume().catch(() => {});
     stopAllPasses();
+    if (!bufPlaying || !watch) armWatch(); // a fresh start (not a seek / handover while the clock already runs)
     bufPlaying = true;
     const { end, start } = bounds();
     const when = c.currentTime + SAFE;
@@ -8221,7 +8256,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const ticker = (() => {
     let w = null, iv = null, running = false;
     const onTick = () => {
-      if (mode === 'buffer' && bufPlaying) bufferTick(); else checkLoop();
+      if (mode === 'buffer' && bufPlaying) { checkWatch(); if (bufPlaying) bufferTick(); } else checkLoop();
       emitState();
       if (!isPlaying()) stop();
     };
@@ -8308,6 +8343,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       pausedAt = bufferGap() ? bounds().start : bufferTime();
       stopAllPasses();
       bufPlaying = false;
+      watch = null;
     } else {
       mediaGapUntil = 0;
       audio.pause();
@@ -8726,6 +8762,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   let scrubCount = 0;
   function scrubSnippet(t) {
     if (!decoded) return false;
+    if (staleCtx() && !bufPlaying) freshCtx();
     const c = getCtx();
     if (c.state !== 'running') c.resume().catch(() => {});
     const dur = 0.07, when = c.currentTime + 0.005;
@@ -8784,6 +8821,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
       queue: queue.map((j) => j.key), job: job ? { key: job.key, needed: !!job.needed } : null, presets: lastPresets, presetPending: !!presetTimer, seekFixes,
       cacheCap: cfg.cacheBytes }; },
     get ctx() { return ctx; },
+    // the phone: the page went to the background / another copy took the audio — the next Play starts a fresh context
+    markStale() { if (ctx) ctxSuspect = true; },
+    // a paused page gives the audio up (the phone, when it goes to the background or another copy plays)
+    releaseAudio() { if (ctx && !isPlaying() && ctx.state === 'running') ctx.suspend().catch(() => {}); },
+    get ctxCount() { return ctxCount; },
     get output() { getCtx(); return master; },
     on,
   };
@@ -12814,6 +12856,14 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
  *  - Media Session: title / artist, play / pause / previous / next phrase handlers, position state on play / pause.
  *  - Screen wake lock while playing (re-taken when the page becomes visible again), released on pause.
  *  - The pre-rendered slowdown cache is capped at 60 MB (96 MB with navigator.deviceMemory ≥ 8) instead of 250 MB.
+ *  - A stuck audio clock (2026-11-21: reopened from the Home Screen while another copy was open, Play showed Pause with
+ *    no sound and a still playhead): the engine gets freshCtx (Play replaces a context that is not running) and a 900 ms
+ *    stall watchdog ('stall' → paused + a message saying to tap Play again, which then starts a fresh context). Going to
+ *    the background while paused gives the audio up (E.releaseAudio); coming back with a context that claims to run but
+ *    whose clock stands still marks it stale (E.markStale).
+ *
+ * Several copies of the page (all devices): a BroadcastChannel 'slp-instances' ({t: hello | here | play | bye, id}).
+ * When one copy starts playing, every other copy pauses (saying so) and, on the phone, gives the audio up.
  */
 (() => {
   'use strict';
@@ -12826,7 +12876,50 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
   const iOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   const mobile = iOS || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   const st = { reg: null, waiting: false, wantReload: false, persisted: null, asked: false, wake: null, silent: null,
-    ctxHooked: null, interrupted: 0, version: null, cacheBytes: null };
+    ctxHooked: null, interrupted: 0, version: null, cacheBytes: null, stalls: 0, yielded: 0 };
+
+  // ---------- several copies of the page ----------
+  const me = Math.random().toString(36).slice(2, 10);
+  const peers = new Set();
+  let chan = null;
+  function post(t) { try { if (chan) chan.postMessage({ t, id: me }); } catch (e) { /* channel closed */ } }
+  function initChannel() {
+    if (typeof BroadcastChannel !== 'function') return;
+    try { chan = new BroadcastChannel('slp-instances'); } catch (e) { return; }
+    chan.onmessage = (ev) => {
+      const m = ev.data || {};
+      if (!m.id || m.id === me) return;
+      if (m.t === 'bye') { peers.delete(m.id); return; }
+      peers.add(m.id);
+      if (m.t === 'hello') post('here');
+      if (m.t === 'play') {
+        st.yielded++;
+        if (E.state.playing) { E.pause(); api.status('Paused: Solo Loop Player started playing in another tab or window.', true); }
+        if (mobile) E.releaseAudio();
+      }
+    };
+    post('hello');
+    window.addEventListener('pagehide', () => post('bye'));
+    window.addEventListener('pageshow', (e) => { if (e.persisted) post('hello'); });
+  }
+  let wasPlayingAny = false;
+  function announce(s) {
+    if (s.playing && !wasPlayingAny) post('play');
+    wasPlayingAny = s.playing;
+  }
+  function onStall() {
+    st.stalls++;
+    api.status(peers.size
+      ? 'No sound: the phone\'s audio was stuck (Solo Loop Player is open in another tab or window too). Tap Play again; if it stays silent, close the other copy.'
+      : 'No sound: the phone\'s audio was stuck after the app was in the background. Tap Play again: it starts fresh.', true);
+  }
+  // back from the background: a context that says 'running' but whose clock stands still is stale
+  function checkFrozen() {
+    const c = E && E.ctx;
+    if (!c || c.state !== 'running' || E.state.playing) return;
+    const t0 = c.currentTime;
+    setTimeout(() => { if (E.ctx === c && c.state === 'running' && !E.state.playing && c.currentTime === t0) E.markStale(); }, 300);
+  }
 
   // ---------- service worker + update chip ----------
   const swAllowed = () => isSite && 'serviceWorker' in navigator && (location.protocol === 'https:' ||
@@ -12983,7 +13076,11 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     if (chip) chip.addEventListener('click', applyUpdate);
     if (mobile) {
       st.cacheBytes = (navigator.deviceMemory >= 8 ? 96 : 60) * 1024 * 1024;
-      E.configure({ cacheBytes: st.cacheBytes });
+      E.configure({ cacheBytes: st.cacheBytes, freshCtx: true, stallMs: 900 });
+      E.on('stall', onStall);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') { if (!E.state.playing) E.releaseAudio(); } else checkFrozen();
+      });
       try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* not settable */ }
       document.addEventListener('touchend', resumeCtx, true);
       document.addEventListener('click', resumeCtx, true);
@@ -12994,13 +13091,16 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     } else {
       E.on('state', () => hookCtx());
     }
+    E.on('state', announce);
+    initChannel();
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkUpdate(); });
     register();
   }
 
   SLP.pwa = { init, audioStored, refreshStorage, checkUpdate, applyUpdate, mobile, iOS, isSite,
     get state() { return { registered: !!st.reg, waiting: st.waiting, persisted: st.persisted, wake: !!st.wake, silent: !!(st.silent && !st.silent.paused),
-      interrupted: st.interrupted, version: st.version, cacheBytes: st.cacheBytes }; } };
+      interrupted: st.interrupted, version: st.version, cacheBytes: st.cacheBytes, stalls: st.stalls, yielded: st.yielded, peers: peers.size,
+      ctxCount: E ? E.ctxCount : 0 }; } };
 })();
 // ---- app/main.js ----
 /* main.js — wires SLP.store (data), SLP.engine (audio), SLP.wave (canvases) and SLP.panels (DOM).
