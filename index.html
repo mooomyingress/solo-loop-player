@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Content-Security-Policy (build.py fills in the hash of the inline app script): no network except the sync API
      (api.github.com, only used with a token saved), Blob-URL workers, inline styles, data:/blob: media and images. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JkrEf0zp/9pAI3+LB9CXCARNyECBo4PxNMfEAQxexPw='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-k7xkgxMK2kJf41AUBS3H5KhjcRuABhukCofa9swM690='; worker-src 'self' blob:; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob: data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta name="slp-build" content="site">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -13766,7 +13766,7 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     else if (playing && t >= pi.start && t < pi.end - 0.05) { E.setRange(rn); E.seek(t); } // carries on from where it is
     else E.setRange(rn, { now: true });
     W.invalidate();
-    U.status('Marked ' + savedLabel(pi.start, pi.end) + ' (' + lengthText(pi) + '): it loops now. Save keeps it (Shift+S); Esc: whole loop.');
+    U.status((opts && opts.note ? opts.note : '') + 'Marked ' + savedLabel(pi.start, pi.end) + ' (' + lengthText(pi) + '): it loops now. Save keeps it (Shift+S); Esc: whole loop.');
     return r;
   }
   // A mouse / pen click in the Bars strip (not on a bar line): that bar becomes the MARKED range and plays from its start
@@ -13777,21 +13777,32 @@ SLP.data.phrases = {"loops":{"chorus 1":{"onsets":[{"t":44.6694,"strength":0.07,
     const g = song().grid;
     if (!g) return;
     if (!E.hasAudio) { selectBar(i, false); return; }
-    const line = (k) => GH.lineAt(g, k), reg = regionNow();
-    const outside = (k) => line(k + 1) <= reg.a + 0.05 || line(k) >= reg.b - 0.05;
-    if (outside(i)) {
-      selectBar(i, true);
-      U.status('Bar ' + GH.barAt(g, line(i) + 0.001).barInChorus + ' is outside this loop\'s range: pick it from its own loop.');
-      return;
-    }
+    const line = (k) => GH.lineAt(g, k);
     const m = S.marked(), near = (x, y) => Math.abs(x - y) < 1e-6;
     let anchor = i;
     if (shift) {
       if (app.barAnchor && m && near(m.a, app.barAnchor.a) && near(m.b, app.barAnchor.b)) anchor = app.barAnchor.i;
       else if (m) anchor = GH.barAt(g, m.a + 0.001).index;
     }
-    const lo = Math.min(anchor, i), hi = Math.max(anchor, i);
-    const r = markRange(line(lo), line(hi + 1), 'end', null, { play: true });
+    let lo = Math.min(anchor, i), hi = Math.max(anchor, i);
+    // The engine only renders the loop ± 2 bars. Bars not wholly inside that (e.g. chorus 1's last bars seen while chorus 2
+    // is the loop) switch to the shortest loop that holds them, so the whole bar plays; a Shift-click range that no loop
+    // holds falls back to the clicked bar alone. No loop holds it → the old click (choose + seek) and a message.
+    const fits = (L, a, b) => { const r = GH.padRegion(g, L.a, L.b, E.duration || song().duration || 0); return a >= r.a - 1e-6 && b <= r.b + 1e-6; };
+    let switched = null;
+    if (!fits(loop(), line(lo), line(hi + 1))) {
+      const holder = (a, b) => song().loops.filter((L) => L.id !== loop().id && L.a <= a + 0.05 && L.b >= b - 0.05)
+        .sort((x, y) => (x.b - x.a) - (y.b - y.a))[0] || null;
+      let L2 = holder(line(lo), line(hi + 1));
+      if (!L2 && lo !== hi) { lo = hi = i; anchor = i; L2 = fits(loop(), line(i), line(i + 1)) ? loop() : holder(line(i), line(i + 1)); }
+      if (!L2) {
+        selectBar(i, true);
+        U.status('Bar ' + GH.barAt(g, line(i) + 0.001).barInChorus + ' is outside this loop\'s range and in no other loop: widen a loop to play it.');
+        return;
+      }
+      if (L2 !== loop()) { switched = L2; selectLoop(L2.id, false); }
+    }
+    const r = markRange(line(lo), line(hi + 1), 'end', null, { play: true, note: switched ? 'Switched to ' + switched.name + '. ' : '' });
     const m2 = S.marked();
     if (!r || !m2) { selectBar(i, false); return; }
     app.barAnchor = { i: anchor, a: m2.a, b: m2.b };
